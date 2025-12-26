@@ -13,7 +13,7 @@ interface ControlsProps {
 
 export function Controls({ onSendMessage }: ControlsProps) {
     const [input, setInput] = useState('');
-    const inputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const canGenerate = useStore(selectCanGenerate);
     const isLoading = useStore(selectIsLoading);
@@ -32,12 +32,18 @@ export function Controls({ onSendMessage }: ControlsProps) {
     const provider = useStore(selectProvider);
     const model = useStore(selectModel);
 
-    // Allow external message sending (from example prompts)
-    useEffect(() => {
-        if (onSendMessage) {
-            // This is a no-op, but we expose the send function through props
+    // Auto-resize textarea
+    const adjustTextareaHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
         }
-    }, [onSendMessage]);
+    };
+
+    useEffect(() => {
+        adjustTextareaHeight();
+    }, [input]);
 
     // Handle message submission
     const handleSubmit = async (messageText?: string) => {
@@ -93,13 +99,6 @@ export function Controls({ onSendMessage }: ControlsProps) {
             setLoading(false);
         }
     };
-
-    // Expose send function for example prompts
-    useEffect(() => {
-        if (onSendMessage) {
-            // Parent can call this via ref or callback
-        }
-    }, [onSendMessage]);
 
     // Handle generate
     const handleGenerate = async () => {
@@ -184,8 +183,8 @@ export function Controls({ onSendMessage }: ControlsProps) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [canGenerate, buildResult]);
 
-    // Handle Enter key in input
-    const handleKeyPress = (e: React.KeyboardEvent) => {
+    // Handle Enter key in textarea (Enter = submit, Shift+Enter = newline)
+    const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSubmit();
@@ -217,22 +216,22 @@ export function Controls({ onSendMessage }: ControlsProps) {
     return (
         <div className="controls">
             <div className="controls-input-wrapper">
-                <input
-                    ref={inputRef}
-                    type="text"
-                    className="controls-input"
+                <textarea
+                    ref={textareaRef}
+                    className="controls-textarea"
                     placeholder={
                         hasApiKey(provider)
                             ? 'Describe your app or answer questions...'
-                            : '🔑 Configure API key in Settings (⚙️) to start'
+                            : '🔑 Configure API key in Settings to start'
                     }
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyDown}
                     disabled={isLoading}
+                    rows={1}
                 />
                 <button
-                    className="btn btn-secondary controls-send"
+                    className="btn btn-primary controls-send"
                     onClick={() => handleSubmit()}
                     disabled={!input.trim() || isLoading}
                 >
@@ -242,8 +241,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
 
             <div className="controls-actions">
                 <button
-                    className={`btn controls-generate ${generateState.disabled ? 'btn-secondary' : 'btn-primary'
-                        }`}
+                    className={`btn controls-action-btn ${generateState.disabled ? 'btn-secondary' : 'btn-primary'}`}
                     onClick={handleGenerate}
                     disabled={generateState.disabled}
                     title={generateState.disabled ? generateState.text : 'Generate your app'}
@@ -252,7 +250,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
                 </button>
 
                 <button
-                    className="btn btn-secondary"
+                    className="btn btn-secondary controls-action-btn"
                     onClick={handleExport}
                     disabled={!buildResult?.success}
                     title="Download as HTML file"
@@ -261,7 +259,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
                 </button>
 
                 <button
-                    className="btn btn-secondary"
+                    className="btn btn-secondary controls-action-btn"
                     onClick={handleReset}
                     title="Clear conversation and spec"
                 >

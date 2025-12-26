@@ -1,47 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useStore, selectCurrentSpec } from '../store';
 import { validateSpec, calculateCompleteness } from '../engine/nedry/validator';
 import { Specification, Entity, View, Action } from '../types';
 
 // ============================================================
-// SpecPanel - Human-Readable Specification with Editing
+// SpecPanel - Human-Readable Specification Display
 // ============================================================
 
-export function SpecPanel() {
+interface SpecPanelProps {
+    hideHeader?: boolean;
+}
+
+export function SpecPanel({ hideHeader = false }: SpecPanelProps) {
     const currentSpec = useStore(selectCurrentSpec);
     const setSpec = useStore((s) => s.setSpec);
     const conversationPhase = useStore((s) => s.conversationPhase);
     const [showJson, setShowJson] = useState(false);
+    const [editedMeta, setEditedMeta] = useState<{ name: string; description: string } | null>(null);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     const completeness = currentSpec ? calculateCompleteness(currentSpec) : 0;
 
-    // Handle inline edits
-    const updateMeta = (key: 'name' | 'description', value: string) => {
+    // Sync edited meta with current spec
+    useEffect(() => {
         if (currentSpec) {
+            setEditedMeta({
+                name: currentSpec.meta.name,
+                description: currentSpec.meta.description
+            });
+            setHasUnsavedChanges(false);
+        }
+    }, [currentSpec?.meta.name, currentSpec?.meta.description]);
+
+    // Handle meta field changes (local state only)
+    const handleMetaChange = (key: 'name' | 'description', value: string) => {
+        if (editedMeta) {
+            setEditedMeta({ ...editedMeta, [key]: value });
+            setHasUnsavedChanges(true);
+        }
+    };
+
+    // Save changes to the spec
+    const saveMetaChanges = useCallback(() => {
+        if (currentSpec && editedMeta && hasUnsavedChanges) {
             setSpec({
                 ...currentSpec,
-                meta: { ...currentSpec.meta, [key]: value }
+                meta: {
+                    ...currentSpec.meta,
+                    name: editedMeta.name,
+                    description: editedMeta.description
+                }
             });
+            setHasUnsavedChanges(false);
+        }
+    }, [currentSpec, editedMeta, hasUnsavedChanges, setSpec]);
+
+    // Discard changes
+    const discardChanges = () => {
+        if (currentSpec) {
+            setEditedMeta({
+                name: currentSpec.meta.name,
+                description: currentSpec.meta.description
+            });
+            setHasUnsavedChanges(false);
         }
     };
 
     return (
         <div className="spec-panel">
-            <div className="panel-header">
-                <h2 className="panel-title">📋 Specification</h2>
-                <div className="panel-header-actions">
-                    <span className={`panel-status panel-status-${conversationPhase}`}>
-                        {getPhaseLabel(conversationPhase)}
-                    </span>
-                    <button
-                        className="panel-toggle-btn"
-                        onClick={() => setShowJson(!showJson)}
-                        title={showJson ? 'Show structured view' : 'Show JSON'}
-                    >
-                        {showJson ? '📝' : '{ }'}
-                    </button>
+            {!hideHeader && (
+                <div className="panel-header">
+                    <h2 className="panel-title">📋 Specification</h2>
+                    <div className="panel-header-actions">
+                        <span className={`panel-status panel-status-${conversationPhase}`}>
+                            {getPhaseLabel(conversationPhase)}
+                        </span>
+                        <button
+                            className="panel-toggle-btn"
+                            onClick={() => setShowJson(!showJson)}
+                            title={showJson ? 'Show structured view' : 'Show JSON'}
+                        >
+                            {showJson ? '📝' : '{ }'}
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="spec-content">
                 {currentSpec ? (
@@ -61,74 +104,140 @@ export function SpecPanel() {
                         </div>
 
                         {showJson ? (
-                            /* JSON View */
-                            <pre className="spec-json">
-                                <code>{JSON.stringify(currentSpec, null, 2)}</code>
-                            </pre>
+                            /* JSON View - Read-only */
+                            <div className="spec-json-wrapper">
+                                <div className="spec-json-header">
+                                    <span className="spec-json-label">Raw Specification (JSON)</span>
+                                    <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(JSON.stringify(currentSpec, null, 2));
+                                        }}
+                                    >
+                                        📋 Copy
+                                    </button>
+                                </div>
+                                <pre className="spec-json">
+                                    <code>{JSON.stringify(currentSpec, null, 2)}</code>
+                                </pre>
+                            </div>
                         ) : (
                             /* Human-Readable View */
                             <div className="spec-structured">
-                                {/* App Info */}
+                                {/* App Info - Editable Section */}
                                 <section className="spec-section">
-                                    <h3 className="spec-section-title">📱 App Info</h3>
+                                    <div className="spec-section-header">
+                                        <h3 className="spec-section-title">📱 App Info</h3>
+                                        {hasUnsavedChanges && (
+                                            <div className="spec-edit-actions">
+                                                <button
+                                                    className="btn btn-sm btn-primary"
+                                                    onClick={saveMetaChanges}
+                                                >
+                                                    💾 Save
+                                                </button>
+                                                <button
+                                                    className="btn btn-sm btn-secondary"
+                                                    onClick={discardChanges}
+                                                >
+                                                    ✕ Discard
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="spec-section-hint">
+                                        Edit the name and description below. Click "Save" to apply changes.
+                                    </p>
                                     <div className="spec-field">
                                         <label>Name</label>
                                         <input
                                             type="text"
-                                            value={currentSpec.meta.name}
-                                            onChange={(e) => updateMeta('name', e.target.value)}
+                                            value={editedMeta?.name || ''}
+                                            onChange={(e) => handleMetaChange('name', e.target.value)}
                                             className="spec-input"
+                                            placeholder="App name"
                                         />
                                     </div>
                                     <div className="spec-field">
                                         <label>Description</label>
                                         <textarea
-                                            value={currentSpec.meta.description}
-                                            onChange={(e) => updateMeta('description', e.target.value)}
+                                            value={editedMeta?.description || ''}
+                                            onChange={(e) => handleMetaChange('description', e.target.value)}
                                             className="spec-textarea"
                                             rows={2}
+                                            placeholder="Brief description of what the app does"
                                         />
                                     </div>
                                 </section>
 
-                                {/* Entities */}
+                                {/* Entities - Read-only display */}
                                 <section className="spec-section">
-                                    <h3 className="spec-section-title">
-                                        📦 Entities ({currentSpec.entities.length})
-                                    </h3>
-                                    {currentSpec.entities.map((entity, i) => (
+                                    <div className="spec-section-header">
+                                        <h3 className="spec-section-title">
+                                            📦 Entities ({currentSpec.entities.length})
+                                        </h3>
+                                    </div>
+                                    <p className="spec-section-hint">
+                                        Data structures for your app, defined through conversation.
+                                    </p>
+                                    {currentSpec.entities.map((entity) => (
                                         <EntityCard key={entity.id} entity={entity} />
                                     ))}
                                     {currentSpec.entities.length === 0 && (
-                                        <p className="spec-empty-hint">No entities defined yet</p>
+                                        <p className="spec-empty-hint">
+                                            No entities defined yet. Describe what data your app needs in the chat.
+                                        </p>
                                     )}
                                 </section>
 
-                                {/* Views */}
+                                {/* Views - Read-only display */}
                                 <section className="spec-section">
-                                    <h3 className="spec-section-title">
-                                        👁️ Views ({currentSpec.views.length})
-                                    </h3>
+                                    <div className="spec-section-header">
+                                        <h3 className="spec-section-title">
+                                            👁️ Views ({currentSpec.views.length})
+                                        </h3>
+                                    </div>
+                                    <p className="spec-section-hint">
+                                        UI screens that display your data.
+                                    </p>
                                     {currentSpec.views.map((view) => (
                                         <ViewCard key={view.id} view={view} />
                                     ))}
                                     {currentSpec.views.length === 0 && (
-                                        <p className="spec-empty-hint">No views defined yet</p>
+                                        <p className="spec-empty-hint">
+                                            No views defined yet.
+                                        </p>
                                     )}
                                 </section>
 
-                                {/* Actions */}
+                                {/* Actions - Read-only display */}
                                 <section className="spec-section">
-                                    <h3 className="spec-section-title">
-                                        ⚡ Actions ({currentSpec.actions.length})
-                                    </h3>
+                                    <div className="spec-section-header">
+                                        <h3 className="spec-section-title">
+                                            ⚡ Actions ({currentSpec.actions.length})
+                                        </h3>
+                                    </div>
+                                    <p className="spec-section-hint">
+                                        Operations users can perform on your data.
+                                    </p>
                                     {currentSpec.actions.map((action) => (
                                         <ActionCard key={action.id} action={action} />
                                     ))}
                                     {currentSpec.actions.length === 0 && (
-                                        <p className="spec-empty-hint">No actions defined yet</p>
+                                        <p className="spec-empty-hint">
+                                            No actions defined yet.
+                                        </p>
                                     )}
                                 </section>
+
+                                {/* Help text */}
+                                <div className="spec-help-box">
+                                    <p>
+                                        <strong>💡 Tip:</strong> You can edit the App Info above directly.
+                                        To modify Entities, Views, or Actions, describe the changes you want in the Chat
+                                        and Mini-Arnold will update the specification.
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </>
@@ -149,16 +258,13 @@ export function SpecPanel() {
     );
 }
 
-// Entity Card Component with Pattern Link
+// Entity Card Component - Read-only
 function EntityCard({ entity }: { entity: Entity }) {
     return (
         <div className="spec-card">
             <div className="spec-card-header">
                 <span className="spec-card-icon">📦</span>
                 <span className="spec-card-title">{entity.name}</span>
-                <span className="spec-pattern-link" title="Generated by entity-card pattern">
-                    🔗 entity-card
-                </span>
             </div>
             <div className="spec-card-body">
                 <div className="spec-property-list">
@@ -167,9 +273,6 @@ function EntityCard({ entity }: { entity: Entity }) {
                             <span className="spec-property-name">{prop.name}</span>
                             <span className="spec-property-type">{prop.type}</span>
                             {prop.required && <span className="spec-property-required">*</span>}
-                            <span className="spec-pattern-hint" title="Input pattern">
-                                → input-{prop.type === 'boolean' ? 'checkbox' : prop.type === 'date' ? 'date' : 'text'}
-                            </span>
                         </div>
                     ))}
                 </div>
@@ -178,11 +281,8 @@ function EntityCard({ entity }: { entity: Entity }) {
     );
 }
 
-// View Card Component with Pattern Link
+// View Card Component - Read-only
 function ViewCard({ view }: { view: View }) {
-    const patternName = view.type === 'list' ? 'view-list' :
-        view.type === 'form' ? 'view-form' :
-            view.type === 'detail' ? 'view-detail' : 'view-dashboard';
     return (
         <div className="spec-card spec-card-small">
             <span className="spec-card-icon">
@@ -190,25 +290,17 @@ function ViewCard({ view }: { view: View }) {
             </span>
             <span className="spec-card-title">{view.name}</span>
             <span className="spec-card-badge">{view.type}</span>
-            <span className="spec-pattern-link" title={`Generated by ${patternName} pattern`}>
-                🔗 {patternName}
-            </span>
         </div>
     );
 }
 
-// Action Card Component with Pattern Link
+// Action Card Component - Read-only
 function ActionCard({ action }: { action: Action }) {
-    const patternName = action.trigger === 'button' ? 'action-button' :
-        action.trigger === 'form_submit' ? 'view-form' : 'action-button';
     return (
         <div className="spec-card spec-card-small">
             <span className="spec-card-icon">⚡</span>
             <span className="spec-card-title">{action.name}</span>
             <span className="spec-card-badge">{action.trigger}</span>
-            <span className="spec-pattern-link" title={`Generated by ${patternName} pattern`}>
-                🔗 {patternName}
-            </span>
         </div>
     );
 }
