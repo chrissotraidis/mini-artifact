@@ -1,35 +1,49 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useStore, selectBuildResult, selectBuildStatus } from '../store';
 
 // ============================================================
-// PreviewPanel - Generated App Preview
+// PreviewPanel - Generated App Preview with Expand/Collapse
 // ============================================================
 
 export function PreviewPanel() {
     const buildResult = useStore(selectBuildResult);
     const buildStatus = useStore(selectBuildStatus);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [showSource, setShowSource] = useState(false);
 
-    // Update iframe content when build result changes
-    useEffect(() => {
-        if (iframeRef.current && buildResult?.success && buildResult.html) {
-            const iframe = iframeRef.current;
-            const doc = iframe.contentDocument || iframe.contentWindow?.document;
-            if (doc) {
-                doc.open();
-                doc.write(buildResult.html);
-                doc.close();
-            }
+    // Log for debugging
+    React.useEffect(() => {
+        if (buildResult?.success && buildResult.html) {
+            console.log('Preview: Build successful, HTML length:', buildResult.html.length);
+            console.log('Preview: Generated HTML:\n', buildResult.html.substring(0, 500) + '...');
         }
     }, [buildResult]);
 
     return (
-        <div className="preview-panel">
+        <div className={`preview-panel ${isExpanded ? 'preview-expanded' : ''}`}>
             <div className="panel-header">
                 <h2 className="panel-title">🖥️ Preview</h2>
-                <span className={`panel-status panel-status-${buildStatus}`}>
-                    {getStatusLabel(buildStatus)}
-                </span>
+                <div className="panel-header-actions">
+                    <span className={`panel-status panel-status-${buildStatus}`}>
+                        {getStatusLabel(buildStatus)}
+                    </span>
+                    {buildResult?.success && buildResult.html && (
+                        <button
+                            className="panel-toggle-btn"
+                            onClick={() => setShowSource(!showSource)}
+                            title={showSource ? 'Show preview' : 'View source'}
+                        >
+                            {showSource ? '👁️' : '{ }'}
+                        </button>
+                    )}
+                    <button
+                        className="panel-expand-btn"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        title={isExpanded ? 'Collapse preview' : 'Expand preview'}
+                    >
+                        {isExpanded ? '⬇️' : '⬆️'}
+                    </button>
+                </div>
             </div>
 
             <div className="preview-content">
@@ -38,12 +52,19 @@ export function PreviewPanel() {
                         <div className="spinner"></div>
                         <p>Generating application...</p>
                     </div>
-                ) : buildResult?.success ? (
+                ) : showSource && buildResult?.html ? (
+                    <div className="source-view">
+                        <pre className="source-code">
+                            <code>{buildResult.html}</code>
+                        </pre>
+                    </div>
+                ) : buildResult?.success && buildResult.html ? (
                     <iframe
-                        ref={iframeRef}
+                        key={buildResult.html.length}
                         className="preview-iframe"
                         title="App Preview"
-                        sandbox="allow-scripts allow-forms"
+                        srcDoc={buildResult.html}
+                        sandbox="allow-scripts allow-forms allow-same-origin"
                     />
                 ) : buildResult?.errors?.length ? (
                     <div className="preview-error">
@@ -51,7 +72,7 @@ export function PreviewPanel() {
                         <p className="preview-error-title">Build Error</p>
                         <ul className="preview-error-list">
                             {buildResult.errors.map((error, i) => (
-                                <li key={i}>{error}</li>
+                                <li key={i}>{JSON.stringify(error)}</li>
                             ))}
                         </ul>
                     </div>
@@ -85,3 +106,4 @@ function getStatusLabel(status: string): string {
 }
 
 export default PreviewPanel;
+

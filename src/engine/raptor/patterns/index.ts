@@ -3,6 +3,7 @@ import { Pattern } from '../../../types';
 // Import all patterns
 import { styleBase } from './style-base';
 import { stateManager } from './state-manager';
+import { appCore } from './app-core';
 import { appShell } from './app-shell';
 import { navigation } from './navigation';
 import { viewList } from './view-list';
@@ -23,6 +24,7 @@ import { inputSelect } from './input-select';
 const patterns: Map<string, Pattern> = new Map([
     ['style-base', styleBase],
     ['state-manager', stateManager],
+    ['app-core', appCore],
     ['app-shell', appShell],
     ['navigation', navigation],
     ['view-list', viewList],

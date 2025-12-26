@@ -19,10 +19,15 @@ export function matchPatterns(spec: Specification): PatternReference[] {
         config: { theme: 'dark' },
     });
 
+    // 2. Add unified app-core (replaces state-manager + handles all CRUD)
     patterns.push({
-        patternId: 'state-manager',
+        patternId: 'app-core',
         targetId: 'global',
-        config: { entities: spec.entities.map((e) => e.id) },
+        config: {
+            appName: spec.meta.name,
+            entities: spec.entities,
+            views: spec.views,
+        },
     });
 
     // 2. Include layout patterns
@@ -123,42 +128,8 @@ export function matchPatterns(spec: Specification): PatternReference[] {
         }
     });
 
-    // 5. Map actions to action patterns
-    spec.actions.forEach((action) => {
-        switch (action.trigger) {
-            case 'button':
-                patterns.push({
-                    patternId: 'action-button',
-                    targetId: action.id,
-                    config: {
-                        actionId: action.id,
-                        actionName: action.name,
-                        logic: action.logic,
-                    },
-                });
-                break;
-
-            case 'form_submit':
-                // Form submit is handled by view-form pattern
-                break;
-
-            case 'auto':
-                // Auto actions handled by state-manager
-                break;
-        }
-
-        // Check if it's a delete action
-        if (action.name.toLowerCase().includes('delete')) {
-            patterns.push({
-                patternId: 'action-delete',
-                targetId: `${action.id}-delete`,
-                config: {
-                    actionId: action.id,
-                    actionName: action.name,
-                },
-            });
-        }
-    });
+    // 5. Actions are now handled by app-core pattern
+    // No need for separate action-button or action-delete patterns
 
     return patterns;
 }

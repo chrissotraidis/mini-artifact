@@ -1,26 +1,32 @@
 import { Pattern } from '../../../types';
 
+/**
+ * View Form Pattern (Simplified)
+ * 
+ * Generates HTML form only - all JS logic handled by app-core pattern.
+ * Uses data attributes for app-core to hook into.
+ */
 export const viewForm: Pattern = {
-    id: 'view-form',
-    name: 'Form View',
-    description: 'Create/edit form with input fields',
-    category: 'view',
-    inputs: [
-        { name: 'viewId', type: 'string', required: true },
-        { name: 'viewName', type: 'string', required: true },
-        { name: 'entity', type: 'object', required: true },
-        { name: 'properties', type: 'object[]', required: true },
-    ],
-    template: {
-        html: `
-<div id="{{viewId}}" class="view hidden">
+  id: 'view-form',
+  name: 'Form View',
+  description: 'Create/edit form with input fields',
+  category: 'view',
+  inputs: [
+    { name: 'viewId', type: 'string', required: true },
+    { name: 'viewName', type: 'string', required: true },
+    { name: 'entity', type: 'object', required: true },
+    { name: 'properties', type: 'object[]', required: true },
+  ],
+  template: {
+    html: `
+<div id="{{viewId}}" class="view" style="display: none;">
   <div class="view-header">
     <h2>{{viewName}}</h2>
   </div>
   
   <div class="form-container">
-    <form id="{{entity.id}}-form" class="form" onsubmit="handle{{capitalize entity.id}}Submit(event)">
-      <input type="hidden" id="{{entity.id}}-edit-id">
+    <form data-entity="{{entity.id}}" class="form">
+      <input type="hidden" id="{{entity.id}}-edit-id" name="edit-id">
       
       {{#each properties}}
       <div class="form-group">
@@ -50,18 +56,6 @@ export const viewForm: Pattern = {
           class="form-input"
           {{#if required}}required{{/if}}
         >
-        {{else if (eq type "enum")}}
-        <select 
-          id="{{../entity.id}}-{{name}}" 
-          name="{{name}}"
-          class="form-input"
-          {{#if required}}required{{/if}}
-        >
-          <option value="">Select...</option>
-          {{#each options}}
-          <option value="{{this}}">{{this}}</option>
-          {{/each}}
-        </select>
         {{else}}
         <input 
           type="text" 
@@ -76,13 +70,13 @@ export const viewForm: Pattern = {
       {{/each}}
       
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="cancelForm('{{entity.id}}')">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="App.showView('{{entity.id}}-list-view')">Cancel</button>
         <button type="submit" class="btn btn-primary">Save {{entity.name}}</button>
       </div>
     </form>
   </div>
 </div>`,
-        css: `
+    css: `
 .form-container {
   max-width: 500px;
 }
@@ -92,6 +86,32 @@ export const viewForm: Pattern = {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .form-checkbox {
@@ -107,65 +127,9 @@ export const viewForm: Pattern = {
   border-top: 1px solid var(--color-border);
 }
 `,
-        js: `
-function handle{{capitalize entity.id}}Submit(event) {
-  event.preventDefault();
-  const form = event.target;
-  const editId = document.getElementById('{{entity.id}}-edit-id').value;
-  
-  const data = {
-    {{#each properties}}
-    {{name}}: {{#if (eq type "boolean")}}form.{{name}}.checked{{else if (eq type "number")}}Number(form.{{name}}.value){{else}}form.{{name}}.value{{/if}},
-    {{/each}}
-  };
-  
-  if (editId) {
-    StateManager.update('{{entity.id}}', editId, data);
-  } else {
-    StateManager.add('{{entity.id}}', data);
-  }
-  
-  form.reset();
-  document.getElementById('{{entity.id}}-edit-id').value = '';
-  
-  // Go back to list view
-  const listView = document.querySelector('[data-view$="-list"]');
-  if (listView) listView.click();
-  
-  render{{capitalize entity.id}}List();
-}
-
-function showAddForm(entityId) {
-  document.getElementById(entityId + '-edit-id').value = '';
-  document.getElementById(entityId + '-form').reset();
-  showView(entityId + '-form-view');
-}
-
-function showEditForm(entityId, item) {
-  document.getElementById(entityId + '-edit-id').value = item.id;
-  
-  // Populate form fields
-  Object.keys(item).forEach(key => {
-    const input = document.getElementById(entityId + '-' + key);
-    if (input) {
-      if (input.type === 'checkbox') {
-        input.checked = item[key];
-      } else {
-        input.value = item[key] || '';
-      }
-    }
-  });
-  
-  showView(entityId + '-form-view');
-}
-
-function cancelForm(entityId) {
-  const listView = document.querySelector('[data-view$="-list"]');
-  if (listView) listView.click();
-}
-`,
-    },
-    dependencies: ['style-base', 'state-manager'],
+    js: '', // All JS handled by app-core
+  },
+  dependencies: ['style-base', 'app-core'],
 };
 
 export default viewForm;

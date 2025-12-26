@@ -17,8 +17,13 @@ export async function build(input: RaptorInput): Promise<RaptorOutput> {
     const { spec, patterns } = input;
 
     try {
+        console.log('Raptor: Starting build with', patterns.length, 'patterns');
+
         // 1. Assemble patterns into HTML/CSS/JS
         const assembled = assemblePatterns(patterns, spec);
+        console.log('Raptor: Assembled HTML:', assembled.html.length, 'chars');
+        console.log('Raptor: Assembled CSS:', assembled.css.length, 'chars');
+        console.log('Raptor: Assembled JS:', assembled.js.length, 'chars');
 
         // 2. Get the app shell pattern
         const shellPattern = getPattern('app-shell');
@@ -34,6 +39,8 @@ export async function build(input: RaptorInput): Promise<RaptorOutput> {
             styles: assembled.css,
             scripts: assembled.js,
         });
+
+        console.log('Raptor: Final HTML:', html.length, 'chars');
 
         // 4. Build manifest
         const manifest: BuildManifest = {

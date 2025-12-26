@@ -1,24 +1,54 @@
 import { Pattern } from '../../../types';
 
 export const stateManager: Pattern = {
-    id: 'state-manager',
-    name: 'State Manager',
-    description: 'localStorage-based state management system',
-    category: 'utility',
-    inputs: [
-        { name: 'entities', type: 'string[]', required: true },
-    ],
-    template: {
-        html: '',
-        css: '',
-        js: `
-// State Manager - localStorage persistence
+  id: 'state-manager',
+  name: 'State Manager',
+  description: 'localStorage-based state management system',
+  category: 'utility',
+  inputs: [
+    { name: 'entities', type: 'string[]', required: true },
+  ],
+  template: {
+    html: '',
+    css: '',
+    js: `
+// Storage adapter with fallback
+const Storage = (function() {
+  let memoryStorage = {};
+  let useMemory = false;
+  
+  // Test if localStorage works
+  try {
+    localStorage.setItem('__test__', '1');
+    localStorage.removeItem('__test__');
+  } catch (e) {
+    console.warn('localStorage not available, using in-memory storage');
+    useMemory = true;
+  }
+  
+  return {
+    getItem(key) {
+      if (useMemory) return memoryStorage[key] || null;
+      return localStorage.getItem(key);
+    },
+    setItem(key, value) {
+      if (useMemory) { memoryStorage[key] = value; return; }
+      localStorage.setItem(key, value);
+    },
+    removeItem(key) {
+      if (useMemory) { delete memoryStorage[key]; return; }
+      localStorage.removeItem(key);
+    }
+  };
+})();
+
+// State Manager - persistent state management
 const StateManager = {
   storageKey: '{{appName}}-data',
 
   // Initialize state with default values
   init() {
-    const stored = localStorage.getItem(this.storageKey);
+    const stored = Storage.getItem(this.storageKey);
     if (!stored) {
       const initial = {
         {{#each entities}}
@@ -30,10 +60,10 @@ const StateManager = {
     return this.load();
   },
 
-  // Load state from localStorage
+  // Load state from storage
   load() {
     try {
-      const stored = localStorage.getItem(this.storageKey);
+      const stored = Storage.getItem(this.storageKey);
       return stored ? JSON.parse(stored) : {};
     } catch (e) {
       console.error('Failed to load state:', e);
@@ -41,10 +71,10 @@ const StateManager = {
     }
   },
 
-  // Save state to localStorage
+  // Save state to storage
   save(state) {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(state));
+      Storage.setItem(this.storageKey, JSON.stringify(state));
     } catch (e) {
       console.error('Failed to save state:', e);
     }
@@ -112,7 +142,7 @@ const StateManager = {
 
   // Clear all data
   clearAll() {
-    localStorage.removeItem(this.storageKey);
+    Storage.removeItem(this.storageKey);
   }
 };
 
@@ -121,8 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
   StateManager.init();
 });
 `,
-    },
-    dependencies: [],
+  },
+  dependencies: [],
 };
 
 export default stateManager;
