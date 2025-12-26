@@ -1,16 +1,22 @@
 import { Pattern } from '../../../types';
 
+/**
+ * Navigation Pattern (Simplified)
+ * 
+ * Generates navigation HTML only - all JS logic handled by app-core pattern.
+ * Uses data attributes for app-core to hook into.
+ */
 export const navigation: Pattern = {
-    id: 'navigation',
-    name: 'Navigation',
-    description: 'Top navigation bar with app name and view links',
-    category: 'layout',
-    inputs: [
-        { name: 'appName', type: 'string', required: true },
-        { name: 'views', type: 'object[]', required: true },
-    ],
-    template: {
-        html: `
+  id: 'navigation',
+  name: 'Navigation',
+  description: 'Top navigation bar with app name and view links',
+  category: 'layout',
+  inputs: [
+    { name: 'appName', type: 'string', required: true },
+    { name: 'views', type: 'object[]', required: true },
+  ],
+  template: {
+    html: `
 <nav class="navbar">
   <div class="navbar-brand">
     <span class="navbar-logo">📦</span>
@@ -18,11 +24,11 @@ export const navigation: Pattern = {
   </div>
   <div class="navbar-links">
     {{#each views}}
-    <a href="#{{id}}" class="navbar-link" data-view="{{id}}">{{name}}</a>
+    <a href="#" class="navbar-link" data-view="{{id}}">{{name}}</a>
     {{/each}}
   </div>
 </nav>`,
-        css: `
+    css: `
 .navbar {
   display: flex;
   align-items: center;
@@ -57,6 +63,7 @@ export const navigation: Pattern = {
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   border-radius: var(--radius);
+  text-decoration: none;
   transition: all 0.15s ease;
 }
 
@@ -64,43 +71,11 @@ export const navigation: Pattern = {
 .navbar-link.active {
   background: var(--color-bg-tertiary);
   color: var(--color-text);
-  text-decoration: none;
 }
 `,
-        js: `
-// Navigation handler
-document.querySelectorAll('.navbar-link').forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    const viewId = e.target.dataset.view;
-    showView(viewId);
-    
-    // Update active state
-    document.querySelectorAll('.navbar-link').forEach(l => l.classList.remove('active'));
-    e.target.classList.add('active');
-  });
-});
-
-function showView(viewId) {
-  document.querySelectorAll('.view').forEach(view => {
-    view.classList.add('hidden');
-  });
-  const targetView = document.getElementById(viewId);
-  if (targetView) {
-    targetView.classList.remove('hidden');
-  }
-}
-
-// Show first view by default
-document.addEventListener('DOMContentLoaded', () => {
-  const firstLink = document.querySelector('.navbar-link');
-  if (firstLink) {
-    firstLink.click();
-  }
-});
-`,
-    },
-    dependencies: ['style-base'],
+    js: '', // All JS handled by app-core
+  },
+  dependencies: ['style-base'],
 };
 
 export default navigation;

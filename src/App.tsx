@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { ChatPanel } from './components/ChatPanel';
 import { SpecPanel } from './components/SpecPanel';
 import { PreviewPanel } from './components/PreviewPanel';
+import { ResizablePanels } from './components/ResizablePanels';
 import { Controls } from './components/Controls';
 import { OnboardingModal } from './components/OnboardingModal';
 import { Sidebar } from './components/Sidebar';
@@ -73,11 +74,13 @@ function App() {
                     </div>
                 </header>
 
-                <div className="panel-container">
-                    <ChatPanel onSendMessage={handleSendMessage} />
-                    <SpecPanel />
-                    <PreviewPanel />
-                </div>
+                {/* Resizable Three-Panel Layout */}
+                <ResizablePanels
+                    left={<ChatPanel onSendMessage={handleSendMessage} />}
+                    center={<SpecPanel />}
+                    right={<PreviewPanel />}
+                    minWidth={250}
+                />
 
                 {/* Footer Controls - Now styled as part of the workspace */}
                 <footer className="app-footer">

@@ -105,9 +105,43 @@ const initialState: StoreState = {
     activePanel: 'chat',
     errors: [],
     isLoading: false,
-    provider: 'openai',
-    model: DEFAULT_MODEL.openai,
+    provider: getInitialProvider(),
+    model: DEFAULT_MODEL[getInitialProvider()],
 };
+
+/**
+ * Detect which provider has a valid API key configured.
+ * Priority: Anthropic > OpenAI > default to OpenAI
+ */
+function getInitialProvider(): Provider {
+    // Check localStorage for saved provider preference first
+    try {
+        const savedStore = sessionStorage.getItem('mini-artifact-store');
+        if (savedStore) {
+            const parsed = JSON.parse(savedStore);
+            if (parsed?.state?.provider) {
+                return parsed.state.provider as Provider;
+            }
+        }
+    } catch {
+        // Ignore parse errors
+    }
+
+    // Check which provider has API key configured
+    const hasAnthropicKey = localStorage.getItem('mini-artifact-anthropic-key') !== null;
+    const hasOpenAIKey = localStorage.getItem('mini-artifact-openai-key') !== null;
+
+    // Prefer Anthropic if available, otherwise OpenAI
+    if (hasAnthropicKey) {
+        return 'anthropic';
+    }
+    if (hasOpenAIKey) {
+        return 'openai';
+    }
+
+    // Default to OpenAI if no keys configured
+    return 'openai';
+}
 
 // ------------------------------------------------------------
 // Store Creation
@@ -206,7 +240,12 @@ export const useStore = create<StoreState & StoreActions>()(
             setModel: (model) => set({ model }),
 
             // Global actions
-            reset: () => set(initialState),
+            reset: () => set((state) => ({
+                ...initialState,
+                // Preserve provider and model settings (effectively preserves API key config)
+                provider: state.provider,
+                model: state.model,
+            })),
         }),
         {
             name: 'mini-artifact-store',

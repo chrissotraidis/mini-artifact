@@ -244,18 +244,62 @@ body {
 }
 
 /* Content Panels */
+/* Resizable Three-Panel Layout */
+.resizable-panels {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.resizable-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Divider Handle */
+.panel-divider {
+  width: 6px;
+  background: var(--color-border);
+  cursor: col-resize;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.panel-divider:hover {
+  background: var(--color-primary);
+}
+
+.panel-divider:hover .divider-handle {
+  opacity: 1;
+}
+
+.divider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 40px;
+  background: var(--color-text-muted);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* Legacy panel-container fallback */
 .panel-container {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   flex: 1;
   overflow: hidden;
-  /* Notion-style divider implementation */
   gap: 1px;
   background: var(--color-bg);
-  /* Use gap for spacing instead of border color */
 }
 
-/* Override panel borders to look like Notion columns */
 .panel-container>div {
   border-right: 1px solid var(--color-border);
 }
@@ -277,6 +321,7 @@ body {
   flex-direction: column;
   background: var(--color-bg);
   overflow: hidden;
+  height: 100%;
 }
 
 .panel-header {
@@ -596,7 +641,188 @@ body {
 }
 
 .spec-empty-hint {
-  display: none;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.5rem;
+}
+
+/* Toggle Button */
+.panel-toggle-btn {
+  padding: 4px 8px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s ease;
+}
+
+.panel-toggle-btn:hover {
+  background: var(--color-bg-tertiary);
+}
+
+/* Structured Spec View */
+.spec-structured {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.spec-section {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--color-border);
+}
+
+.spec-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+}
+
+/* Spec Fields (editable) */
+.spec-field {
+  margin-bottom: 12px;
+}
+
+.spec-field label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.spec-input,
+.spec-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: border-color 0.15s ease;
+}
+
+.spec-input:focus,
+.spec-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.spec-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* Spec Cards */
+.spec-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.spec-card:last-child {
+  margin-bottom: 0;
+}
+
+.spec-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.spec-card-icon {
+  font-size: 16px;
+}
+
+.spec-card-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.spec-card-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* Small card variant (for views/actions) */
+.spec-card-small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.spec-card-small .spec-card-title {
+  flex: 1;
+}
+
+/* Property List */
+.spec-property-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spec-property {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.spec-property-name {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.spec-property-type {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding: 2px 6px;
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+}
+
+.spec-property-required {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+/* Pattern Links - connect spec to code */
+.spec-pattern-link {
+  font-size: 10px;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+  cursor: help;
+  white-space: nowrap;
+}
+
+.spec-pattern-hint {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  margin-left: auto;
+  opacity: 0.7;
 }
 
 /* ============================================================
@@ -607,15 +833,54 @@ body {
   flex: 1;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  min-height: 0;
+  /* Important for flex child to shrink */
 }
 
 .preview-iframe {
+  flex: 1;
   width: 100%;
-  height: 100%;
+  min-height: 0;
   border: none;
   background: white;
+}
+
+/* Expanded preview overlay */
+.preview-expanded {
+  position: fixed !important;
+  top: 60px;
+  left: 200px;
+  right: 0;
+  bottom: 60px;
+  z-index: 100;
+  background: var(--color-bg);
+  border-radius: 0;
+}
+
+.preview-expanded .preview-content {
+  height: calc(100% - 50px);
+}
+
+/* Panel header actions */
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-expand-btn {
+  padding: 4px 8px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+
+.panel-expand-btn:hover {
+  background: var(--color-bg-tertiary);
 }
 
 .preview-loading,
@@ -675,6 +940,25 @@ body {
   }
 }
 
+/* Source View */
+.source-view {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--color-bg-secondary);
+}
+
+.source-code {
+  margin: 0;
+  padding: 1rem;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--color-text-secondary);
+}
+
 /* ============================================================
    Controls
    ============================================================ */
@@ -729,6 +1013,17 @@ body {
   gap: 8px;
   flex-shrink: 0;
   /* Prevent buttons from squashing */
+}
+
+/* Send button inside input wrapper */
+.controls-send {
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* Generate button styling */
+.controls-generate {
+  min-width: 140px;
 }
 
 /* ============================================================
@@ -817,17 +1112,8 @@ body {
    ============================================================ */
 
 .shortcuts-help {
-  position: fixed;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  display: flex;
-  gap: 1rem;
-  font-size: 0.625rem;
-  color: var(--color-text-muted);
-  padding: 0.25rem 0.5rem;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius);
-  opacity: 0.7;
+  display: none;
+  /* Hidden - overlaps with controls, buttons have tooltips */
 }
 
 /* ============================================================

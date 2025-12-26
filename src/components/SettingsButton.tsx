@@ -184,9 +184,11 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
 
                                 {/* OpenAI API Key */}
                                 <div className="settings-section">
-                                    <h3>🔑 OpenAI API Key</h3>
+                                    <h3>🔑 OpenAI API Key {openaiKey ? '✅' : ''}</h3>
                                     <p className="settings-hint">
-                                        Current: <strong>{maskedOpenaiKey}</strong>
+                                        Status: <strong style={{ color: openaiKey ? '#22c55e' : '#ef4444' }}>
+                                            {openaiKey ? `Configured (${maskedOpenaiKey})` : '❌ Not configured'}
+                                        </strong>
                                     </p>
                                     <div className="form-group">
                                         <input
@@ -212,9 +214,11 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
 
                                 {/* Anthropic API Key */}
                                 <div className="settings-section">
-                                    <h3>🔑 Anthropic API Key</h3>
+                                    <h3>🔑 Anthropic API Key {anthropicKey ? '✅' : ''}</h3>
                                     <p className="settings-hint">
-                                        Current: <strong>{maskedAnthropicKey}</strong>
+                                        Status: <strong style={{ color: anthropicKey ? '#22c55e' : '#ef4444' }}>
+                                            {anthropicKey ? `Configured (${maskedAnthropicKey})` : '❌ Not configured'}
+                                        </strong>
                                     </p>
                                     <div className="form-group">
                                         <input

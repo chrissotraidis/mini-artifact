@@ -67,9 +67,12 @@ export async function processMessage(input: ArnoldInput): Promise<ArnoldOutput> 
         return parsed;
     } catch (error) {
         logger.error(Components.ARNOLD, 'Processing error', { error });
+        console.error('Arnold: Full error:', error);
 
         // Handle specific error types
         if (error instanceof Error) {
+            console.error('Arnold: Error message:', error.message);
+
             if (error.message === 'API_KEY_MISSING') {
                 return {
                     type: 'question',
@@ -112,6 +115,13 @@ export async function processMessage(input: ArnoldInput): Promise<ArnoldOutput> 
                     confidence: 0,
                 };
             }
+
+            // Return the actual error for debugging
+            return {
+                type: 'question',
+                question: `⚠️ **Error**: ${error.message}\n\nPlease check the browser console for more details.`,
+                confidence: 0,
+            };
         }
 
         // Generic fallback
