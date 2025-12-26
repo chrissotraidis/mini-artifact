@@ -12,5 +12,22 @@ export default defineConfig({
     },
     server: {
         port: 5173,
+        proxy: {
+            // Proxy Anthropic API calls to bypass CORS in local dev
+            '/api/anthropic': {
+                target: 'https://api.anthropic.com',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
+                headers: {
+                    'anthropic-dangerous-direct-browser-access': 'true',
+                },
+            },
+            // Proxy OpenAI API calls to bypass CORS in local dev
+            '/api/openai': {
+                target: 'https://api.openai.com',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api\/openai/, ''),
+            },
+        },
     },
 });

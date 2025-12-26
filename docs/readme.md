@@ -2,7 +2,7 @@
 
 Owner: Chris Sotraidis
 Created: December 22, 2025
-Last Updated: December 22, 2025
+Last Updated: December 25, 2025
 
 ---
 
@@ -35,25 +35,33 @@ npm run dev
 open http://localhost:5173
 ```
 
-### Configuring the API Key
+### Configuring Your AI Provider
 
-Mini Artifact needs an **OpenAI API key** to power the intelligence layer (Mini-Arnold).
+Mini Artifact supports **two AI providers** for the intelligence layer:
+
+| Provider | Models | API Key Format |
+|----------|--------|----------------|
+| **OpenAI** | GPT-4o, GPT-4 Turbo | `sk-...` |
+| **Anthropic** | Claude Sonnet 4, Claude 3.5 Sonnet, Claude 3 Opus | `sk-ant-...` |
 
 **Option 1: Via the UI (Recommended)**
 1. Open the app at http://localhost:5173
-2. You'll see an onboarding modal explaining the app
-3. Click "Get Started" → Enter your API key → "Save & Continue"
-4. Or access Settings (⚙️) anytime to update your key
+2. You'll see an onboarding modal
+3. Click "Get Started" → Choose your provider → Enter your API key → "Save & Continue"
+4. Or access Settings (⚙️) anytime to switch providers or update keys
 
 **Option 2: Via Environment Variable**
 ```bash
-# Create .env.local
+# Create .env.local with either or both:
 echo "VITE_OPENAI_API_KEY=sk-your-key-here" > .env.local
+echo "VITE_ANTHROPIC_API_KEY=sk-ant-your-key-here" >> .env.local
 ```
 
-Get an API key from: https://platform.openai.com/api-keys
+Get API keys from:
+- OpenAI: https://platform.openai.com/api-keys
+- Anthropic: https://console.anthropic.com/settings/keys
 
-> **Note:** API keys are stored in localStorage (browser-only). They're never sent to any server except OpenAI directly.
+> **Note:** API keys are stored in localStorage (browser-only). They're never sent to any server except the respective AI provider.
 
 ---
 
@@ -126,12 +134,16 @@ mini-artifact/
 │   │   └── raptor/          # Composition layer (patterns)
 │   │
 │   ├── store/               # Zustand state management
-│   ├── api/                 # OpenAI API client
+│   ├── api/                 # API clients
+│   │   └── providers/       # Multi-provider abstraction
+│   │       ├── index.ts     # Router + key management
+│   │       ├── openai.ts    # OpenAI adapter
+│   │       └── anthropic.ts # Anthropic adapter
 │   ├── types/               # TypeScript interfaces
-│   └── utils/               # Template helpers
+│   └── utils/               # Template helpers, logging
 │
 ├── api/                     # Vercel Edge Functions
-│   └── chat.ts              # OpenAI proxy (production)
+│   └── chat.ts              # Multi-provider LLM proxy
 └── public/                  # Static assets
 ```
 
@@ -145,6 +157,7 @@ mini-artifact/
 | Three-layer architecture | ✅ Implemented |
 | Pattern library (14 patterns) | ✅ Complete |
 | UI with onboarding | ✅ Complete |
+| Multi-provider support (OpenAI + Claude) | ✅ Complete |
 | End-to-end flow | ⏳ Needs API key to verify |
 
 ---

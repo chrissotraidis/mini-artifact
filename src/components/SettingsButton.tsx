@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     useStore,
-    selectAiModel,
-    selectSetAiModel,
+    selectProvider,
+    selectModel,
+    selectSetProvider,
+    selectSetModel,
 } from '../store';
-import { AiModel } from '../types';
+import { Provider, DEFAULT_MODELS } from '../types';
+import { setApiKey, getApiKey, clearApiKey, migrateOldApiKey } from '../api/providers';
 
 // ============================================================
 // SettingsButton - Comprehensive Settings Panel
@@ -17,45 +20,75 @@ interface SettingsButtonProps {
 
 export function SettingsButton({ children, className }: SettingsButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const aiModel = useStore(selectAiModel);
-    const setAiModel = useStore(selectSetAiModel);
+    const provider = useStore(selectProvider);
+    const model = useStore(selectModel);
+    const setProvider = useStore(selectSetProvider);
+    const setModel = useStore(selectSetModel);
 
-    const [apiKey, setApiKey] = useState(() => {
-        return localStorage.getItem('mini-artifact-api-key') || '';
-    });
-    const [saved, setSaved] = useState(false);
+    // Migrate old API key format on mount
+    useEffect(() => {
+        migrateOldApiKey();
+    }, []);
 
-    // Local state for input before saving
-    const [keyInput, setKeyInput] = useState(apiKey);
+    // API key state for each provider
+    const [openaiKey, setOpenaiKey] = useState(() => getApiKey('openai') || '');
+    const [anthropicKey, setAnthropicKey] = useState(() => getApiKey('anthropic') || '');
+    const [openaiKeyInput, setOpenaiKeyInput] = useState(openaiKey);
+    const [anthropicKeyInput, setAnthropicKeyInput] = useState(anthropicKey);
+    const [savedOpenai, setSavedOpenai] = useState(false);
+    const [savedAnthropic, setSavedAnthropic] = useState(false);
     const [activeTab, setActiveTab] = useState<'api' | 'about' | 'help'>('api');
 
-    const handleSave = () => {
-        if (keyInput.trim()) {
-            localStorage.setItem('mini-artifact-api-key', keyInput);
-            setApiKey(keyInput);
+    const handleSaveOpenai = () => {
+        if (openaiKeyInput.trim()) {
+            setApiKey('openai', openaiKeyInput);
+            setOpenaiKey(openaiKeyInput);
         } else {
-            localStorage.removeItem('mini-artifact-api-key');
-            setApiKey('');
+            clearApiKey('openai');
+            setOpenaiKey('');
         }
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        setSavedOpenai(true);
+        setTimeout(() => setSavedOpenai(false), 2000);
+    };
+
+    const handleSaveAnthropic = () => {
+        if (anthropicKeyInput.trim()) {
+            setApiKey('anthropic', anthropicKeyInput);
+            setAnthropicKey(anthropicKeyInput);
+        } else {
+            clearApiKey('anthropic');
+            setAnthropicKey('');
+        }
+        setSavedAnthropic(true);
+        setTimeout(() => setSavedAnthropic(false), 2000);
+    };
+
+    const handleProviderChange = (newProvider: Provider) => {
+        setProvider(newProvider);
     };
 
     const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setAiModel(e.target.value as AiModel);
+        setModel(e.target.value);
     };
 
     const handleClearAll = () => {
-        if (confirm('Clear all data? This will reset the conversation, specification, and API key.')) {
-            localStorage.removeItem('mini-artifact-api-key');
+        if (confirm('Clear all data? This will reset the conversation, specification, and API keys.')) {
+            clearApiKey('openai');
+            clearApiKey('anthropic');
             sessionStorage.removeItem('mini-artifact-store');
             window.location.reload();
         }
     };
 
-    const maskedKey = apiKey
-        ? `sk-...${apiKey.slice(-4)}`
+    const maskedOpenaiKey = openaiKey
+        ? `sk-...${openaiKey.slice(-4)}`
         : 'Not configured';
+
+    const maskedAnthropicKey = anthropicKey
+        ? `sk-ant-...${anthropicKey.slice(-4)}`
+        : 'Not configured';
+
+    const currentModels = DEFAULT_MODELS[provider];
 
     const Trigger = children ? (
         <div className={className} onClick={() => setIsOpen(true)}>
@@ -110,76 +143,106 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
                         {/* API Tab */}
                         {activeTab === 'api' && (
                             <div className="settings-content">
+                                {/* Provider Selection */}
                                 <div className="settings-section">
-                                    <h3>OpenAI API Key</h3>
-                                    <p className="settings-hint">
-                                        Current: <strong>{maskedKey}</strong>
-                                    </p>
+                                    <h3>🔌 Provider</h3>
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                                        <button
+                                            className={`btn ${provider === 'openai' ? 'btn-primary' : 'btn-secondary'}`}
+                                            onClick={() => handleProviderChange('openai')}
+                                            style={{ flex: 1 }}
+                                        >
+                                            OpenAI
+                                        </button>
+                                        <button
+                                            className={`btn ${provider === 'anthropic' ? 'btn-primary' : 'btn-secondary'}`}
+                                            onClick={() => handleProviderChange('anthropic')}
+                                            style={{ flex: 1 }}
+                                        >
+                                            Anthropic
+                                        </button>
+                                    </div>
 
+                                    {/* Model Selection */}
+                                    <label className="block text-sm font-medium text-[#37352f] mb-1.5">
+                                        Model
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            value={model}
+                                            onChange={handleModelChange}
+                                            className="w-full bg-[#f7f6f3] border border-[#e0e0e0] rounded px-3 py-2 text-sm text-[#37352f] focus:outline-none focus:border-[#d9730d] appearance-none cursor-pointer"
+                                        >
+                                            {currentModels.map((m) => (
+                                                <option key={m.id} value={m.id}>
+                                                    {m.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* OpenAI API Key */}
+                                <div className="settings-section">
+                                    <h3>🔑 OpenAI API Key</h3>
+                                    <p className="settings-hint">
+                                        Current: <strong>{maskedOpenaiKey}</strong>
+                                    </p>
                                     <div className="form-group">
                                         <input
                                             type="password"
                                             className="form-input"
                                             placeholder="sk-..."
-                                            value={keyInput}
-                                            onChange={(e) => setKeyInput(e.target.value)}
+                                            value={openaiKeyInput}
+                                            onChange={(e) => setOpenaiKeyInput(e.target.value)}
                                         />
                                     </div>
-
-                                    <button className="btn btn-secondary" onClick={handleSave}>
-                                        {saved ? '✓ Saved' : 'Update Key'}
+                                    <button className="btn btn-secondary" onClick={handleSaveOpenai}>
+                                        {savedOpenai ? '✓ Saved' : 'Update Key'}
                                     </button>
-
                                     <div className="info-box info-box-small">
                                         <p>
-                                            <strong>Need a key?</strong> Get one at{' '}
+                                            Get a key at{' '}
                                             <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">
-                                                platform.openai.com/api-keys
+                                                platform.openai.com
                                             </a>
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Model Selection */}
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-[#37352f] mb-1.5">
-                                        AI Model
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            value={aiModel}
-                                            onChange={handleModelChange}
-                                            className="w-full bg-[#f7f6f3] border border-[#e0e0e0] rounded px-3 py-2 text-sm text-[#37352f] focus:outline-none focus:border-[#d9730d] appearance-none cursor-pointer"
-                                        >
-                                            <option value="gpt-4o">
-                                                GPT-4o (Recommended)
-                                            </option>
-                                            <option value="gpt-4-turbo">
-                                                GPT-4 Turbo
-                                            </option>
-                                            <option value="gpt-3.5-turbo">
-                                                GPT-3.5 Turbo
-                                            </option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#9b9a97]">
-                                            <svg
-                                                className="w-4 h-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M19 9l-7 7-7-7"
-                                                />
-                                            </svg>
-                                        </div>
+                                {/* Anthropic API Key */}
+                                <div className="settings-section">
+                                    <h3>🔑 Anthropic API Key</h3>
+                                    <p className="settings-hint">
+                                        Current: <strong>{maskedAnthropicKey}</strong>
+                                    </p>
+                                    <div className="form-group">
+                                        <input
+                                            type="password"
+                                            className="form-input"
+                                            placeholder="sk-ant-..."
+                                            value={anthropicKeyInput}
+                                            onChange={(e) => setAnthropicKeyInput(e.target.value)}
+                                        />
                                     </div>
-                                    <p className="text-xs text-[#787774] mt-1.5">
-                                        Choose the brain behind the magic. GPT-4o is
-                                        fastest and smartest.
+                                    <button className="btn btn-secondary" onClick={handleSaveAnthropic}>
+                                        {savedAnthropic ? '✓ Saved' : 'Update Key'}
+                                    </button>
+                                    <div className="info-box info-box-small">
+                                        <p>
+                                            Get a key at{' '}
+                                            <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">
+                                                console.anthropic.com
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Security Warning */}
+                                <div className="info-box" style={{ background: '#fff3cd', border: '1px solid #ffc107' }}>
+                                    <p style={{ color: '#856404', margin: 0, fontSize: '12px' }}>
+                                        ⚠️ <strong>Security Note:</strong> API keys are stored in your browser's localStorage.
+                                        Avoid using on shared computers.
                                     </p>
                                 </div>
 

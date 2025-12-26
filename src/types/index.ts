@@ -2,6 +2,11 @@
 // Mini Artifact - Core TypeScript Interfaces
 // ============================================================
 
+// Import and re-export LLM types for convenience
+import type { Provider } from './llm';
+export type { Provider, LLMMessage, LLMRequest, LLMResponse, ModelInfo } from './llm';
+export { DEFAULT_MODELS, DEFAULT_MODEL } from './llm';
+
 // ------------------------------------------------------------
 // Message Types
 // ------------------------------------------------------------
@@ -71,7 +76,8 @@ export interface ArnoldInput {
     message: string;
     conversationHistory: Message[];
     currentSpec: Specification | null;
-    model: AiModel;
+    provider: Provider;
+    model: string;
 }
 
 export interface ArnoldOutput {
@@ -228,7 +234,10 @@ export interface AppState {
     // UI state
     activePanel: 'chat' | 'spec' | 'preview';
     errors: AppError[];
-    aiModel: AiModel;
+
+    // LLM Configuration
+    provider: Provider;
+    model: string;
 }
 
 export interface BuildInstructions {

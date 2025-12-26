@@ -1,7 +1,14 @@
 import React from 'react';
 import { SettingsButton } from './SettingsButton';
+import { logger } from '../utils/logger';
 
 export function Sidebar() {
+    const handleExportLogs = () => {
+        logger.downloadLogs();
+    };
+
+    const errorCount = logger.getErrorCount();
+
     return (
         <aside className="sidebar">
             {/* Workspace Selector / Header */}
@@ -37,9 +44,33 @@ export function Sidebar() {
                         <span className="nav-icon">📄</span>
                         <span className="nav-text">Specification</span>
                     </div>
-                    <div className="nav-item">
+                    <div
+                        className="nav-item"
+                        onClick={handleExportLogs}
+                        style={{ cursor: 'pointer' }}
+                        title="Click to download debug logs"
+                    >
                         <span className="nav-icon">🔨</span>
                         <span className="nav-text">Build Logs</span>
+                        {errorCount > 0 && (
+                            <span
+                                style={{
+                                    marginLeft: '8px',
+                                    background: '#e74c3c',
+                                    color: 'white',
+                                    borderRadius: '50%',
+                                    width: '18px',
+                                    height: '18px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '11px',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                {errorCount}
+                            </span>
+                        )}
                     </div>
                     <div className="nav-item">
                         <span className="nav-icon">👁️</span>
@@ -67,3 +98,4 @@ export function Sidebar() {
         </aside>
     );
 }
+

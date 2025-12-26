@@ -1,30 +1,33 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// Mock the OpenAI API call
-vi.mock('../src/api/openai', () => ({
-    callOpenAI: vi.fn(),
+// Mock the LLM provider call
+vi.mock('../src/api/providers', () => ({
+    callLLM: vi.fn(),
+    getProviderErrorMessage: vi.fn((e) => e.message),
 }));
 
 import { processMessage, isSpecComplete, calculateCompleteness } from '../src/engine/arnold';
-import { callOpenAI } from '../src/api/openai';
+import { callLLM } from '../src/api/providers';
 import { Specification } from '../src/types';
 
 describe('Mini-Arnold', () => {
     describe('processMessage', () => {
         it('returns a question for ambiguous input', async () => {
             // Mock response asking for clarification
-            (callOpenAI as ReturnType<typeof vi.fn>).mockResolvedValue(
-                JSON.stringify({
+            (callLLM as ReturnType<typeof vi.fn>).mockResolvedValue({
+                text: JSON.stringify({
                     type: 'question',
                     question: 'What properties should tasks have?',
                     confidence: 0.2,
-                })
-            );
+                }),
+            });
 
             const result = await processMessage({
                 message: 'I need an app',
                 conversationHistory: [],
                 currentSpec: null,
+                provider: 'openai',
+                model: 'gpt-4o',
             });
 
             expect(result.type).toBe('question');
@@ -34,8 +37,8 @@ describe('Mini-Arnold', () => {
 
         it('builds spec from clear intent', async () => {
             // Mock response with spec
-            (callOpenAI as ReturnType<typeof vi.fn>).mockResolvedValue(
-                JSON.stringify({
+            (callLLM as ReturnType<typeof vi.fn>).mockResolvedValue({
+                text: JSON.stringify({
                     type: 'spec_update',
                     spec: {
                         version: '1.0.0',
@@ -56,13 +59,15 @@ describe('Mini-Arnold', () => {
                         patterns: ['view-list', 'action-button'],
                     },
                     confidence: 0.8,
-                })
-            );
+                }),
+            });
 
             const result = await processMessage({
                 message: 'I need a todo app with tasks that have titles and completion status',
                 conversationHistory: [],
                 currentSpec: null,
+                provider: 'openai',
+                model: 'gpt-4o',
             });
 
             expect(result.type).toBe('spec_update');
@@ -73,8 +78,8 @@ describe('Mini-Arnold', () => {
 
         it('increases confidence as spec completes', async () => {
             // First call - partial spec
-            (callOpenAI as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-                JSON.stringify({
+            (callLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+                text: JSON.stringify({
                     type: 'spec_update',
                     spec: {
                         version: '1.0.0',
@@ -85,18 +90,20 @@ describe('Mini-Arnold', () => {
                         patterns: [],
                     },
                     confidence: 0.3,
-                })
-            );
+                }),
+            });
 
             const result1 = await processMessage({
                 message: 'An app',
                 conversationHistory: [],
                 currentSpec: null,
+                provider: 'openai',
+                model: 'gpt-4o',
             });
 
             // Second call - more complete spec
-            (callOpenAI as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-                JSON.stringify({
+            (callLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+                text: JSON.stringify({
                     type: 'spec_complete',
                     spec: {
                         version: '1.0.0',
@@ -107,13 +114,15 @@ describe('Mini-Arnold', () => {
                         patterns: [],
                     },
                     confidence: 0.95,
-                })
-            );
+                }),
+            });
 
             const result2 = await processMessage({
                 message: 'With tasks that have titles',
                 conversationHistory: [],
                 currentSpec: result1.spec || null,
+                provider: 'openai',
+                model: 'gpt-4o',
             });
 
             expect(result2.confidence).toBeGreaterThan(result1.confidence);

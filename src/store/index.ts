@@ -9,7 +9,8 @@ import {
     ValidationResult,
     createId,
     createTimestamp,
-    AiModel,
+    Provider,
+    DEFAULT_MODEL,
 } from '../types';
 
 // ------------------------------------------------------------
@@ -38,11 +39,11 @@ interface StoreState {
     errors: AppError[];
 
     // Loading states
-    // Loading states
     isLoading: boolean;
 
     // Configuration
-    aiModel: AiModel;
+    provider: Provider;
+    model: string;
 }
 
 // ------------------------------------------------------------
@@ -81,7 +82,8 @@ interface StoreActions {
     setLoading: (loading: boolean) => void;
 
     // Config actions
-    setAiModel: (model: AiModel) => void;
+    setProvider: (provider: Provider) => void;
+    setModel: (model: string) => void;
 
     // Global actions
     reset: () => void;
@@ -103,7 +105,8 @@ const initialState: StoreState = {
     activePanel: 'chat',
     errors: [],
     isLoading: false,
-    aiModel: 'gpt-4o',
+    provider: 'openai',
+    model: DEFAULT_MODEL.openai,
 };
 
 // ------------------------------------------------------------
@@ -196,7 +199,11 @@ export const useStore = create<StoreState & StoreActions>()(
             setLoading: (loading) => set({ isLoading: loading }),
 
             // Config actions
-            setAiModel: (model) => set({ aiModel: model }),
+            setProvider: (provider) => set((state) => ({
+                provider,
+                model: DEFAULT_MODEL[provider],
+            })),
+            setModel: (model) => set({ model }),
 
             // Global actions
             reset: () => set(initialState),
@@ -211,7 +218,8 @@ export const useStore = create<StoreState & StoreActions>()(
                 buildResult: state.buildResult,
                 phase: state.phase,
                 conversationPhase: state.conversationPhase,
-                aiModel: state.aiModel,
+                provider: state.provider,
+                model: state.model,
             }),
         }
     )
@@ -229,8 +237,10 @@ export const selectPhase = (state: StoreState) => state.phase;
 export const selectErrors = (state: StoreState) => state.errors;
 export const selectIsLoading = (state: StoreState) => state.isLoading;
 export const selectActivePanel = (state: StoreState) => state.activePanel;
-export const selectAiModel = (state: StoreState) => state.aiModel;
-export const selectSetAiModel = (state: StoreActions) => state.setAiModel;
+export const selectProvider = (state: StoreState) => state.provider;
+export const selectModel = (state: StoreState) => state.model;
+export const selectSetProvider = (state: StoreActions) => state.setProvider;
+export const selectSetModel = (state: StoreActions) => state.setModel;
 
 export const selectCanGenerate = (state: StoreState) =>
     state.currentSpec !== null &&

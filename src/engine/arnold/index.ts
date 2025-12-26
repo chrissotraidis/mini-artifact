@@ -1,4 +1,4 @@
-import { callOpenAI } from '../../api/openai';
+import { callLLM, getProviderErrorMessage } from '../../api/providers';
 import { SYSTEM_PROMPT, buildUserPrompt, buildConversationContext } from './prompts';
 import {
     ArnoldInput,
@@ -7,6 +7,7 @@ import {
     Message,
     createTimestamp,
 } from '../../types';
+import { logger, Components } from '../../utils/logger';
 
 // ============================================================
 // Mini-Arnold - Documentation Engine
@@ -20,6 +21,12 @@ import {
  * incrementally as requirements become clear.
  */
 export async function processMessage(input: ArnoldInput): Promise<ArnoldOutput> {
+    logger.info(Components.ARNOLD, 'Processing message', {
+        messageLength: input.message.length,
+        hasSpec: !!input.currentSpec,
+        historyLength: input.conversationHistory.length,
+    });
+
     try {
         // Build the conversation history for context
         const conversationMessages = buildConversationContext(
@@ -36,19 +43,30 @@ export async function processMessage(input: ArnoldInput): Promise<ArnoldOutput> 
             { role: 'user' as const, content: userPrompt },
         ];
 
-        // Call OpenAI with JSON response format
-        const responseText = await callOpenAI({
-            messages,
-            response_format: { type: 'json_object' },
+        logger.debug(Components.ARNOLD, `Calling ${input.provider}`, { totalMessages: messages.length });
+
+        // Call LLM with JSON response format
+        const response = await callLLM({
+            provider: input.provider,
             model: input.model,
+            messages,
+            responseFormat: { type: 'json_object' },
         });
+
+        const responseText = response.text;
 
         // Parse the response
         const parsed = parseArnoldResponse(responseText);
 
+        logger.info(Components.ARNOLD, 'Response parsed successfully', {
+            type: parsed.type,
+            confidence: parsed.confidence,
+            hasSpec: !!parsed.spec,
+        });
+
         return parsed;
     } catch (error) {
-        console.error('Arnold processing error:', error);
+        logger.error(Components.ARNOLD, 'Processing error', { error });
 
         // Handle specific error types
         if (error instanceof Error) {
@@ -69,7 +87,28 @@ export async function processMessage(input: ArnoldInput): Promise<ArnoldOutput> 
             if (error.message === 'RATE_LIMITED') {
                 return {
                     type: 'question',
-                    question: "⏳ **Rate Limited**\n\nOpenAI has rate-limited your requests. Please wait a moment and try again.",
+                    question: "⏳ **Temporarily Rate Limited**\n\nOpenAI has temporarily rate-limited your requests. The system retried automatically but limits persist. Please wait 30 seconds and try again.",
+                    confidence: 0,
+                };
+            }
+            if (error.message === 'QUOTA_EXCEEDED') {
+                return {
+                    type: 'question',
+                    question: "🚫 **Quota Exceeded**\n\nYour OpenAI account has exceeded its quota. Please check your usage and billing at [platform.openai.com](https://platform.openai.com).",
+                    confidence: 0,
+                };
+            }
+            if (error.message === 'BILLING_ERROR') {
+                return {
+                    type: 'question',
+                    question: "💳 **Billing Issue**\n\nYour OpenAI account has a billing issue. Please add a payment method at [platform.openai.com](https://platform.openai.com).",
+                    confidence: 0,
+                };
+            }
+            if (error.message === 'REQUEST_IN_FLIGHT') {
+                return {
+                    type: 'question',
+                    question: "⏳ **Request In Progress**\n\nA request is already being processed. Please wait for it to complete.",
                     confidence: 0,
                 };
             }
@@ -89,9 +128,36 @@ export async function processMessage(input: ArnoldInput): Promise<ArnoldOutput> 
 // Response Parsing
 // ------------------------------------------------------------
 
+/**
+ * Strip markdown code blocks from response text.
+ * Claude often wraps JSON in ```json ... ``` blocks.
+ */
+function stripMarkdownCodeBlocks(text: string): string {
+    // Remove ```json or ``` at the start and ``` at the end
+    let cleaned = text.trim();
+
+    // Match ```json or ```JSON or just ```
+    if (cleaned.startsWith('```')) {
+        // Find the end of the first line (after ```json)
+        const firstNewline = cleaned.indexOf('\n');
+        if (firstNewline !== -1) {
+            cleaned = cleaned.substring(firstNewline + 1);
+        }
+    }
+
+    // Remove trailing ```
+    if (cleaned.endsWith('```')) {
+        cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+
+    return cleaned.trim();
+}
+
 function parseArnoldResponse(responseText: string): ArnoldOutput {
     try {
-        const parsed = JSON.parse(responseText);
+        // Strip markdown code blocks if present (Claude often wraps JSON this way)
+        const cleanedText = stripMarkdownCodeBlocks(responseText);
+        const parsed = JSON.parse(cleanedText);
 
         // Validate response structure
         if (!parsed.type || !['question', 'spec_update', 'spec_complete'].includes(parsed.type)) {

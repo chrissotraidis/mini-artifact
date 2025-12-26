@@ -350,15 +350,107 @@ Both: UI-based configuration via Settings modal, with localStorage storage. Envi
 
 ---
 
+## DEC-010: OpenAI API Error Recovery Strategy
+
+**Date:** 2025-12-23
+
+**Status:** Accepted
+
+**Deciders:** Chris Sotraidis
+
+### Context
+
+The app was experiencing immediate rate limiting errors on first API request, causing confusion between temporary rate limits and account-level quota/billing issues.
+
+### Options Considered
+
+1. **Simple retry** — Retry N times with fixed delay
+2. **Exponential backoff** — Retry with increasing delays
+3. **Error classification + backoff** — Parse error body to distinguish error types, then retry only on temporary limits
+
+### Decision
+
+Exponential backoff with error classification and concurrency guard.
+
+### Rationale
+
+- OpenAI returns different 429 errors (rate_limit_exceeded vs insufficient_quota)
+- Users need clear feedback to distinguish temporary issues from account problems
+- Exponential backoff (1s, 2s, 4s) respects OpenAI's rate limits
+- Concurrency guard prevents duplicate requests
+
+### Consequences
+
+- More robust error handling
+- Users see specific messages: "Quota Exceeded" vs "Rate Limited"
+- Console logs help debug API issues
+- Retry logic adds small complexity to the request flow
+
+---
+
+## DEC-011: Multi-Provider LLM Architecture
+
+**Date:** 2025-12-25
+
+**Status:** Accepted
+
+**Deciders:** Chris Sotraidis
+
+### Context
+
+The app only supported OpenAI as the LLM provider. Users requested support for Anthropic Claude as an alternative, requiring architectural changes to support multiple providers.
+
+### Options Considered
+
+1. **Add Claude as separate code path** — Duplicate API call logic
+2. **Provider abstraction layer** — Unified interface with adapters per provider
+3. **SDK-based abstraction** — Use LangChain or similar
+
+### Decision
+
+Provider abstraction layer with unified types and per-provider adapters.
+
+### Rationale
+
+- Clean separation of concerns (types, routing, adapters)
+- Easy to add future providers (Gemini, Llama, etc.)
+- Unified request/response format simplifies Arnold and other consumers
+- SDK-based approaches add unnecessary dependencies
+- Proxy-first architecture keeps API keys server-side in production
+
+### Implementation
+
+| Component | Purpose |
+|-----------|---------|
+| `src/types/llm.ts` | Unified types: `Provider`, `LLMRequest`, `LLMResponse` |
+| `src/api/providers/index.ts` | Router with proxy-first fallback |
+| `src/api/providers/openai.ts` | OpenAI adapter |
+| `src/api/providers/anthropic.ts` | Anthropic adapter |
+| `api/chat.ts` | Edge Function with multi-provider routing |
+
+### Claude-Specific Handling
+
+- System messages extracted to top-level `system` param
+- `max_tokens` required (defaults to 4096)
+- Response content blocks flattened to single string
+
+### Consequences
+
+- Store now has `provider` and `model` state (was `aiModel`)
+- Settings UI has provider toggle + separate API key inputs
+- Edge Function requires `ANTHROPIC_API_KEY` env var for Claude
+- Tests updated to mock `callLLM` instead of `callOpenAI`
+
+---
+
 ## Future Decisions (To Be Made)
 
 | ID | Topic | Status |
 | --- | --- | --- |
 | DEC-009 | Spec versioning approach | Pending |
-| DEC-010 | Error recovery strategy | Pending |
-| DEC-011 | Pattern conflict resolution | Pending |
-| DEC-012 | CI/CD pipeline | Pending |
-| DEC-013 | Accessibility requirements | Pending |
+| DEC-012 | Pattern conflict resolution | Pending |
+| DEC-013 | CI/CD pipeline | Pending |
+| DEC-014 | Accessibility requirements | Pending |
 
 ---
 
@@ -368,3 +460,5 @@ Both: UI-based configuration via Settings modal, with localStorage storage. Envi
 | --- | --- | --- |
 | 0.1.0 | 2025-12-22 | Initial 7 decisions documented |
 | 0.1.1 | 2025-12-22 | Added DEC-008: Runtime API Key Management |
+| 0.1.2 | 2025-12-23 | Added DEC-010: OpenAI API Error Recovery Strategy |
+| 0.1.3 | 2025-12-25 | Added DEC-011: Multi-Provider LLM Architecture |

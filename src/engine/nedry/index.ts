@@ -11,6 +11,7 @@ import {
     createId,
     createTimestamp,
 } from '../../types';
+import { logger, Components } from '../../utils/logger';
 
 // ============================================================
 // Mini-Nedry - Orchestration Layer
@@ -25,25 +26,36 @@ import {
 export async function handleInput(input: NedryInput): Promise<NedryOutput> {
     const { type, payload, currentState } = input;
 
+    logger.info(Components.NEDRY, `Routing input: ${type}`, {
+        inputType: type,
+        currentPhase: currentState.conversationPhase,
+        hasSpec: !!currentState.currentSpec,
+    });
+
     try {
         switch (type) {
             case 'user_message':
+                logger.debug(Components.NEDRY, 'Routing to Arnold for message processing');
                 return await handleUserMessage(payload as string, currentState);
 
             case 'spec_update':
+                logger.debug(Components.NEDRY, 'Handling spec update');
                 return handleSpecUpdate(payload, currentState);
 
             case 'build_request':
+                logger.debug(Components.NEDRY, 'Routing to Raptor for build');
                 return await handleBuildRequest(currentState);
 
             case 'error':
+                logger.debug(Components.NEDRY, 'Handling error');
                 return handleError(payload as AppError, currentState);
 
             default:
+                logger.warn(Components.NEDRY, `Unknown input type: ${type}`);
                 return createErrorOutput(`Unknown input type: ${type}`);
         }
     } catch (error) {
-        console.error('Nedry handling error:', error);
+        logger.error(Components.NEDRY, 'Handling error', { error });
         return createErrorOutput(
             error instanceof Error ? error.message : 'An unexpected error occurred'
         );
@@ -63,7 +75,8 @@ async function handleUserMessage(
         message,
         conversationHistory: currentState.messages,
         currentSpec: currentState.currentSpec,
-        model: currentState.aiModel,
+        provider: currentState.provider,
+        model: currentState.model,
     });
 
     // Handle different response types
