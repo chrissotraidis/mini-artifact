@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { useStore, selectBuildResult, selectBuildStatus } from '../store';
+import { useStore, selectBuildResult, selectBuildStatus, selectExpandedPanel } from '../store';
 
 // ============================================================
 // PreviewPanel - Generated App Preview with Expand/Collapse
 // ============================================================
 
-export function PreviewPanel() {
+interface PreviewPanelProps {
+    hideHeader?: boolean;
+}
+
+export function PreviewPanel({ hideHeader = false }: PreviewPanelProps) {
     const buildResult = useStore(selectBuildResult);
     const buildStatus = useStore(selectBuildStatus);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const expandedPanel = useStore(selectExpandedPanel);
+    const setExpandedPanel = useStore((s) => s.setExpandedPanel);
     const [showSource, setShowSource] = useState(false);
+
+    const isExpanded = expandedPanel === 'preview';
 
     // Log for debugging
     React.useEffect(() => {
@@ -19,32 +26,38 @@ export function PreviewPanel() {
         }
     }, [buildResult]);
 
+    const handleToggleExpand = () => {
+        setExpandedPanel(isExpanded ? null : 'preview');
+    };
+
     return (
         <div className={`preview-panel ${isExpanded ? 'preview-expanded' : ''}`}>
-            <div className="panel-header">
-                <h2 className="panel-title">🖥️ Preview</h2>
-                <div className="panel-header-actions">
-                    <span className={`panel-status panel-status-${buildStatus}`}>
-                        {getStatusLabel(buildStatus)}
-                    </span>
-                    {buildResult?.success && buildResult.html && (
+            {!hideHeader && (
+                <div className="panel-header">
+                    <h2 className="panel-title">🖥️ Preview</h2>
+                    <div className="panel-header-actions">
+                        <span className={`panel-status panel-status-${buildStatus}`}>
+                            {getStatusLabel(buildStatus)}
+                        </span>
+                        {buildResult?.success && buildResult.html && (
+                            <button
+                                className="panel-toggle-btn"
+                                onClick={() => setShowSource(!showSource)}
+                                title={showSource ? 'Show preview' : 'View source'}
+                            >
+                                {showSource ? '👁️' : '{ }'}
+                            </button>
+                        )}
                         <button
-                            className="panel-toggle-btn"
-                            onClick={() => setShowSource(!showSource)}
-                            title={showSource ? 'Show preview' : 'View source'}
+                            className="panel-expand-btn"
+                            onClick={handleToggleExpand}
+                            title={isExpanded ? 'Collapse preview' : 'Expand preview'}
                         >
-                            {showSource ? '👁️' : '{ }'}
+                            {isExpanded ? '⬇️' : '⬆️'}
                         </button>
-                    )}
-                    <button
-                        className="panel-expand-btn"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        title={isExpanded ? 'Collapse preview' : 'Expand preview'}
-                    >
-                        {isExpanded ? '⬇️' : '⬆️'}
-                    </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="preview-content">
                 {buildStatus === 'building' ? (

@@ -1,101 +1,178 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SettingsButton } from './SettingsButton';
-import { logger } from '../utils/logger';
+import { NewProjectModal } from './NewProjectModal';
+import { logger, Components } from '../utils/logger';
+import { useStore, selectActivePanel, selectExpandedPanel, selectProjects, selectCurrentProjectId } from '../store';
+import { Settings, FileCode, MessageSquare, Eye, Hammer, Plus, FolderOpen, Trash2 } from 'lucide-react';
 
 export function Sidebar() {
+    const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+
+    const activePanel = useStore(selectActivePanel);
+    const expandedPanel = useStore(selectExpandedPanel);
+    const projects = useStore(selectProjects);
+    const currentProjectId = useStore(selectCurrentProjectId);
+    const setActivePanel = useStore((s) => s.setActivePanel);
+    const setExpandedPanel = useStore((s) => s.setExpandedPanel);
+    const createProject = useStore((s) => s.createProject);
+    const switchProject = useStore((s) => s.switchProject);
+    const deleteProject = useStore((s) => s.deleteProject);
+
     const handleExportLogs = () => {
         logger.downloadLogs();
+    };
+
+    const handleNavClick = (panel: 'chat' | 'spec' | 'preview') => {
+        setActivePanel(panel);
+        logger.info(Components.UI, `Navigated to ${panel}`);
+
+        // If clicking spec or preview, expand that panel
+        if (panel === 'spec' || panel === 'preview') {
+            setExpandedPanel(panel);
+        } else {
+            // Clicking chat collapses any expanded panel
+            setExpandedPanel(null);
+        }
+    };
+
+    const handleNewProject = (name: string) => {
+        createProject(name);
+    };
+
+    const handleDeleteProject = (e: React.MouseEvent, projectId: string) => {
+        e.stopPropagation();
+        if (confirm('Delete this project? This cannot be undone.')) {
+            deleteProject(projectId);
+        }
     };
 
     const errorCount = logger.getErrorCount();
 
     return (
         <aside className="sidebar">
-            {/* Workspace Selector / Header */}
+            {/* Header */}
             <div className="sidebar-header">
-                <div className="workspace-title">
-                    <img src="/logo.png" alt="Logo" className="workspace-logo" style={{ width: '24px', height: '24px', borderRadius: '4px' }} />
-                    <span className="workspace-name">Ingen Systems</span>
-                    <span className="workspace-arrow">▼</span>
-                </div>
-                <div className="user-email">guest@jurassic.park</div>
+                <img
+                    src="/logo.png"
+                    alt="Mini Artifact"
+                    style={{ width: '24px', height: '24px', borderRadius: '4px' }}
+                />
+                <span className="sidebar-title">Mini Artifact</span>
             </div>
 
-            {/* Navigation Sections */}
-            <div className="sidebar-nav">
-
-                {/* Favorites / Quick Links */}
-                <div className="nav-section">
-                    <div className="nav-header">Favorites</div>
-                    <div className="nav-item active">
-                        <span className="nav-icon">🧬</span>
-                        Project Genome
-                    </div>
-                    <div className="nav-item">
-                        <span className="nav-icon">📋</span>
-                        Safety Protocols
-                    </div>
-                </div>
-
-                {/* Workspace Pages */}
-                <div className="nav-section">
-                    <div className="nav-header">Workspace</div>
-                    <div className="nav-item">
-                        <span className="nav-icon">📄</span>
-                        <span className="nav-text">Specification</span>
-                    </div>
-                    <div
-                        className="nav-item"
-                        onClick={handleExportLogs}
-                        style={{ cursor: 'pointer' }}
-                        title="Click to download debug logs"
+            {/* Projects Section */}
+            <div className="sidebar-section">
+                <div className="sidebar-section-header">
+                    <span className="sidebar-section-title">Projects</span>
+                    <button
+                        className="sidebar-add-btn"
+                        onClick={() => setShowNewProjectModal(true)}
+                        title="New Project"
                     >
-                        <span className="nav-icon">🔨</span>
-                        <span className="nav-text">Build Logs</span>
-                        {errorCount > 0 && (
-                            <span
-                                style={{
-                                    marginLeft: '8px',
-                                    background: '#e74c3c',
-                                    color: 'white',
-                                    borderRadius: '50%',
-                                    width: '18px',
-                                    height: '18px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '11px',
-                                    fontWeight: 'bold'
-                                }}
+                        <Plus size={14} />
+                    </button>
+                </div>
+                <div className="project-list">
+                    {projects.length === 0 ? (
+                        <div className="project-empty">
+                            <p>No projects yet</p>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => setShowNewProjectModal(true)}
                             >
-                                {errorCount}
-                            </span>
-                        )}
-                    </div>
-                    <div className="nav-item">
-                        <span className="nav-icon">👁️</span>
-                        <span className="nav-text">Live Preview</span>
-                    </div>
+                                Create First Project
+                            </button>
+                        </div>
+                    ) : (
+                        projects.map((project) => (
+                            <div
+                                key={project.id}
+                                className={`project-item ${project.id === currentProjectId ? 'active' : ''}`}
+                                onClick={() => switchProject(project.id)}
+                            >
+                                <FolderOpen size={14} className="project-icon" />
+                                <span className="project-name">{project.name}</span>
+                                <button
+                                    className="project-delete-btn"
+                                    onClick={(e) => handleDeleteProject(e, project.id)}
+                                    title="Delete project"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        ))
+                    )}
                 </div>
-
-                {/* Jurassic Theme Decor */}
-                <div className="nav-section mt-auto">
-                    <div className="jurassic-badge">
-                        <span className="badge-icon">🌿</span>
-                        <span>System Online</span>
-                    </div>
-                </div>
-
             </div>
 
-            {/* Sidebar Footer with Settings */}
+            {/* Navigation */}
+            <nav className="nav-section">
+                <div className="nav-section-label">Current Project</div>
+                <div
+                    className={`nav-item ${activePanel === 'chat' && !expandedPanel ? 'active' : ''}`}
+                    onClick={() => handleNavClick('chat')}
+                >
+                    <MessageSquare className="nav-icon" size={18} />
+                    <span>Chat</span>
+                </div>
+                <div
+                    className={`nav-item ${expandedPanel === 'spec' ? 'active' : ''}`}
+                    onClick={() => handleNavClick('spec')}
+                >
+                    <FileCode className="nav-icon" size={18} />
+                    <span>Specification</span>
+                </div>
+                <div
+                    className={`nav-item ${expandedPanel === 'preview' ? 'active' : ''}`}
+                    onClick={() => handleNavClick('preview')}
+                >
+                    <Eye className="nav-icon" size={18} />
+                    <span>Preview</span>
+                </div>
+                <div
+                    className="nav-item"
+                    onClick={handleExportLogs}
+                    style={{ cursor: 'pointer' }}
+                    title="Click to download debug logs"
+                >
+                    <Hammer className="nav-icon" size={18} />
+                    <span>Build Logs</span>
+                    {errorCount > 0 && (
+                        <span
+                            style={{
+                                marginLeft: 'auto',
+                                background: 'var(--color-error)',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '18px',
+                                height: '18px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '11px',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            {errorCount}
+                        </span>
+                    )}
+                </div>
+            </nav>
+
+            {/* Footer with Settings */}
             <div className="sidebar-footer">
-                <SettingsButton className="nav-item settings-trigger">
-                    <span className="nav-icon">⚙️</span>
+                <SettingsButton className="nav-item">
+                    <Settings className="nav-icon" size={18} />
                     <span>Settings</span>
                 </SettingsButton>
             </div>
+
+            {/* New Project Modal */}
+            <NewProjectModal
+                isOpen={showNewProjectModal}
+                onClose={() => setShowNewProjectModal(false)}
+                onSubmit={handleNewProject}
+            />
         </aside>
     );
 }
-

@@ -19,6 +19,21 @@ export interface Message {
 }
 
 // ------------------------------------------------------------
+// Project Types (for persistence)
+// ------------------------------------------------------------
+
+export interface Project {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    messages: Message[];
+    spec: Specification | null;
+    buildResult: BuildResult | null;
+    conversationPhase: 'gathering' | 'refining' | 'complete';
+}
+
+// ------------------------------------------------------------
 // Specification Structure (Mini-Arnold output)
 // ------------------------------------------------------------
 

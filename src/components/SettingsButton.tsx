@@ -30,6 +30,20 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
         migrateOldApiKey();
     }, []);
 
+    // Close modal on Escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+        }
+    }, [isOpen]);
+
     // API key state for each provider
     const [openaiKey, setOpenaiKey] = useState(() => getApiKey('openai') || '');
     const [anthropicKey, setAnthropicKey] = useState(() => getApiKey('anthropic') || '');
@@ -245,8 +259,7 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
                                 {/* Security Warning */}
                                 <div className="info-box" style={{ background: '#fff3cd', border: '1px solid #ffc107' }}>
                                     <p style={{ color: '#856404', margin: 0, fontSize: '12px' }}>
-                                        ⚠️ <strong>Security Note:</strong> API keys are stored in your browser's localStorage.
-                                        Avoid using on shared computers.
+                                        ⚠️ <strong>Security Note:</strong> Your API keys are stored in your browser's local storage. Do not use this application on shared or public computers.
                                     </p>
                                 </div>
 

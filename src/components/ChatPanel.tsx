@@ -47,19 +47,18 @@ export function ChatPanel({ onSendMessage }: ChatPanelProps) {
 
     return (
         <div className="chat-panel">
-            <div className="panel-header">
-                <h2 className="panel-title">💬 Chat</h2>
-                <span className="panel-badge">{messages.length}</span>
-            </div>
-
             <div className="chat-messages" ref={scrollRef}>
                 {messages.length === 0 ? (
-                    <div className="chat-empty">
-                        <div className="chat-empty-icon">🚀</div>
-                        <h3 className="chat-empty-title">Get Started</h3>
-                        <p className="chat-empty-text">
-                            Describe the app you want to build, or try an example:
-                        </p>
+                    <div className="welcome-screen">
+                        <div className="welcome-header">
+                            <h1 className="welcome-title">
+                                What do you want to build?
+                            </h1>
+                            <p className="welcome-subtitle">
+                                Describe your app in natural language. Mini-Arnold will ask clarifying questions
+                                and build a specification. Then click Generate to create your app.
+                            </p>
+                        </div>
 
                         <div className="example-prompts">
                             {EXAMPLE_PROMPTS.map((prompt, index) => (
@@ -81,7 +80,9 @@ export function ChatPanel({ onSendMessage }: ChatPanelProps) {
                             className={`chat-message chat-message-${message.role}`}
                         >
                             <div className="message-avatar">
-                                {message.role === 'user' ? '👤' : '🤖'}
+                                {message.role === 'user' ? '👤' :
+                                    <img src="/logo.png" style={{ width: '20px', borderRadius: '4px' }} alt="AI" />
+                                }
                             </div>
                             <div className="message-content">
                                 <div className="message-header">
