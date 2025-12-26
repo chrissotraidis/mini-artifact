@@ -29,7 +29,8 @@ Created time: December 22, 2025 5:34 PM
 
 | Technology | Purpose |
 | --- | --- |
-| **OpenAI API** | LLM inference |
+| **OpenAI API** | LLM inference (GPT-4o, GPT-4 Turbo) |
+| **Anthropic API** | LLM inference (Claude Sonnet, Opus) |
 | **Vercel Edge Functions** | API proxy |
 
 ### Development
@@ -89,19 +90,28 @@ mini-artifact/
 │   │   └── types.ts
 │   │
 │   ├── api/                 # API layer
-│   │   ├── openai.ts
+│   │   ├── providers/       # Multi-provider support
+│   │   │   ├── index.ts     # Router + key management
+│   │   │   ├── openai.ts    # OpenAI adapter
+│   │   │   └── anthropic.ts # Anthropic adapter
+│   │   ├── openai.ts        # (legacy, deprecated)
 │   │   └── types.ts
 │   │
 │   ├── utils/               # Utilities
 │   │   ├── templates.ts     # Handlebars helpers
+│   │   ├── logger.ts        # Centralized logging
 │   │   └── storage.ts       # Session storage
+│   │
+│   ├── types/               # TypeScript types
+│   │   ├── index.ts         # Main type exports
+│   │   └── llm.ts           # LLM provider types
 │   │
 │   ├── App.tsx
 │   ├── main.tsx
 │   └── index.css
 │
 ├── api/                     # Vercel Edge Functions
-│   └── chat.ts              # OpenAI proxy
+│   └── chat.ts              # Multi-provider LLM proxy
 │
 ├── tests/
 │   ├── arnold.test.ts
@@ -195,28 +205,91 @@ export const useStore = create<AppState>()(
 
 ---
 
+## 3.5 LLM Provider Architecture
+
+### Multi-Provider Support
+
+The app supports multiple LLM providers through a unified abstraction layer.
+
+| Provider | Models |
+|----------|--------|
+| OpenAI | GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo |
+| Anthropic | Claude Sonnet 4, Claude 3.5 Sonnet, Claude 3 Opus |
+
+### Unified Types
+
+```typescript
+// src/types/llm.ts
+type Provider = 'openai' | 'anthropic';
+
+interface LLMRequest {
+  provider: Provider;
+  model: string;
+  messages: LLMMessage[];
+  maxTokens?: number;
+  responseFormat?: { type: 'json_object' } | { type: 'text' };
+}
+
+interface LLMResponse {
+  text: string;
+  usage?: { inputTokens: number; outputTokens: number };
+}
+```
+
+### Provider Routing
+
+```typescript
+// src/api/providers/index.ts
+export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
+  // 1. Try Edge Function proxy (production)
+  // 2. Fall back to direct API (local dev)
+}
+```
+
+### API Key Management
+
+Keys are stored per-provider in localStorage:
+- `mini-artifact-openai-key`
+- `mini-artifact-anthropic-key`
+
+### Edge Function
+
+The `api/chat.ts` Edge Function routes to providers based on request:
+
+```typescript
+// Request shape
+{ provider: 'openai' | 'anthropic', model: string, messages: [...] }
+
+// Response shape
+{ content: string, usage?: { input: number, output: number } }
+```
+
+---
+
 ## 4. Core Engine Implementation
 
 ### Mini-Arnold
 
 ```tsx
 // src/engine/arnold/index.ts
-import { callOpenAI } from '../../api/openai';
+import { callLLM } from '../../api/providers';
 import { SYSTEM_PROMPT, buildUserPrompt } from './prompts';
 
 export async function processMessage(
   input: ArnoldInput
 ): Promise<ArnoldOutput> {
-  const response = await callOpenAI({
+  const response = await callLLM({
+    provider: input.provider,
+    model: input.model,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       ...input.conversationHistory,
       { role: 'user', content: buildUserPrompt(input) }
     ],
-    response_format: { type: 'json_object' }
+    responseFormat: { type: 'json_object' }
   });
   
-  const parsed = JSON.parse(response);
+  const parsed = JSON.parse(response.text);
   
   return {
     type: parsed.type,

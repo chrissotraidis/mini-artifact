@@ -1,4 +1,5 @@
 import { ChatRequest, ChatResponse } from '../types';
+import { logger, Components } from '../utils/logger';
 
 // ------------------------------------------------------------
 // API Configuration
@@ -6,6 +7,13 @@ import { ChatRequest, ChatResponse } from '../types';
 
 const API_ENDPOINT = '/api/chat';
 const DIRECT_API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_DELAY_MS = 1000;
+
+// Concurrency guard
+let requestInFlight = false;
 
 // ------------------------------------------------------------
 // API Key Management
@@ -76,13 +84,37 @@ export async function callOpenAI(request: ChatRequest): Promise<string> {
 // ------------------------------------------------------------
 
 async function callOpenAIDirect(request: ChatRequest): Promise<string> {
+    // Concurrency guard - prevent overlapping requests
+    if (requestInFlight) {
+        logger.warn(Components.OPENAI, 'Request blocked - another request in flight');
+        throw new Error('REQUEST_IN_FLIGHT');
+    }
+
+    requestInFlight = true;
+    logger.debug(Components.OPENAI, 'Starting OpenAI request', { model: request.model });
+    try {
+        return await callWithRetry(request);
+    } finally {
+        requestInFlight = false;
+    }
+}
+
+// ------------------------------------------------------------
+// Retry Logic with Exponential Backoff
+// ------------------------------------------------------------
+
+async function callWithRetry(request: ChatRequest, attempt = 0): Promise<string> {
     const apiKey = getApiKey();
 
     if (!apiKey) {
-        throw new Error(
-            'API_KEY_MISSING'
-        );
+        logger.error(Components.OPENAI, 'API key missing');
+        throw new Error('API_KEY_MISSING');
     }
+
+    logger.debug(Components.OPENAI, `API call attempt ${attempt + 1}`, {
+        model: request.model || 'gpt-4o',
+        messageCount: request.messages.length,
+    });
 
     const response = await fetch(DIRECT_API_ENDPOINT, {
         method: 'POST',
@@ -99,18 +131,93 @@ async function callOpenAIDirect(request: ChatRequest): Promise<string> {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
         if (response.status === 401) {
+            logger.error(Components.OPENAI, 'Invalid API key', { status: 401 });
             throw new Error('API_KEY_INVALID');
         }
+
         if (response.status === 429) {
-            throw new Error('RATE_LIMITED');
+            const errorBody = await parseErrorBody(response);
+            const errorType = classifyOpenAIError(errorBody);
+
+            // Only retry on temporary rate limits, not quota/billing issues
+            if (errorType === 'RATE_LIMITED' && attempt < MAX_RETRIES) {
+                const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
+                logger.warn(Components.OPENAI, `Rate limited, retrying in ${delay}ms`, {
+                    attempt: attempt + 1,
+                    maxRetries: MAX_RETRIES,
+                });
+                await sleep(delay);
+                return callWithRetry(request, attempt + 1);
+            }
+
+            throw new Error(errorType);
         }
+
+        const errorText = await response.text();
+        logger.error(Components.OPENAI, `API error: ${response.status}`, { errorText });
         throw new Error(`OpenAI API Error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    logger.info(Components.OPENAI, 'API call successful', {
+        model: request.model || 'gpt-4o',
+        responseLength: data.choices[0]?.message?.content?.length || 0,
+    });
     return data.choices[0].message.content;
+}
+
+// ------------------------------------------------------------
+// Error Classification
+// ------------------------------------------------------------
+
+async function parseErrorBody(response: Response): Promise<Record<string, unknown>> {
+    try {
+        const text = await response.text();
+        return JSON.parse(text);
+    } catch {
+        return {};
+    }
+}
+
+function classifyOpenAIError(body: Record<string, unknown>): string {
+    const error = body?.error as Record<string, unknown> | undefined;
+    const errorType = (error?.type as string) || '';
+    const errorCode = (error?.code as string) || '';
+    const errorMessage = (error?.message as string) || '';
+
+    // Log detailed error for debugging
+    logger.error(Components.OPENAI, 'API error classification', {
+        errorType,
+        errorCode,
+        errorMessage,
+        fullBody: body,
+    });
+
+    // Quota exceeded - account needs billing attention
+    if (
+        errorType === 'insufficient_quota' ||
+        errorCode === 'insufficient_quota' ||
+        errorMessage.includes('quota')
+    ) {
+        return 'QUOTA_EXCEEDED';
+    }
+
+    // Billing hard limit - payment method issue
+    if (
+        errorType === 'billing_hard_limit_reached' ||
+        errorMessage.includes('billing') ||
+        errorMessage.includes('payment')
+    ) {
+        return 'BILLING_ERROR';
+    }
+
+    // Default to rate limited (temporary, can retry)
+    return 'RATE_LIMITED';
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ------------------------------------------------------------
@@ -135,7 +242,13 @@ export function getErrorMessage(error: unknown): string {
             case 'API_KEY_INVALID':
                 return 'Your API key is invalid. Please check it in Settings (⚙️)';
             case 'RATE_LIMITED':
-                return 'Rate limited by OpenAI. Please wait a moment and try again.';
+                return 'Temporarily rate limited by OpenAI. Please wait 30 seconds and try again.';
+            case 'QUOTA_EXCEEDED':
+                return 'Your OpenAI quota is exceeded. Check your account at platform.openai.com.';
+            case 'BILLING_ERROR':
+                return 'Billing issue with your OpenAI account. Add a payment method at platform.openai.com.';
+            case 'REQUEST_IN_FLIGHT':
+                return 'A request is already in progress. Please wait for it to complete.';
             default:
                 return error.message;
         }

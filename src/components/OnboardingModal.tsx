@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Provider, DEFAULT_MODELS } from '../types';
+import { setApiKey, getApiKey, hasApiKey } from '../api/providers';
+import { useStore, selectProvider, selectSetProvider, selectSetModel } from '../store';
 
 // ============================================================
-// OnboardingModal - Comprehensive Setup Guide
+// OnboardingModal - Comprehensive Setup Guide with Provider Selection
 // ============================================================
 
 interface OnboardingModalProps {
@@ -10,50 +13,83 @@ interface OnboardingModalProps {
 
 export function OnboardingModal({ onComplete }: OnboardingModalProps) {
     const [step, setStep] = useState(1);
-    const [apiKey, setApiKey] = useState('');
+    const [selectedProvider, setSelectedProvider] = useState<Provider>('openai');
+    const [apiKeyInput, setApiKeyInput] = useState('');
     const [error, setError] = useState('');
     const [isValidating, setIsValidating] = useState(false);
 
-    // Check if key already exists
+    const storeProvider = useStore(selectProvider);
+    const setStoreProvider = useStore(selectSetProvider);
+    const setStoreModel = useStore(selectSetModel);
+
+    // Check if any key already exists
     useEffect(() => {
-        const existingKey = localStorage.getItem('mini-artifact-api-key');
-        if (existingKey) {
+        if (hasApiKey('openai') || hasApiKey('anthropic')) {
             onComplete();
         }
     }, [onComplete]);
+
+    const validateOpenAIKey = async (key: string): Promise<boolean> => {
+        try {
+            const response = await fetch('https://api.openai.com/v1/models', {
+                headers: { Authorization: `Bearer ${key}` },
+            });
+            return response.ok || response.status !== 401;
+        } catch {
+            return true; // Network error - accept anyway
+        }
+    };
+
+    const validateAnthropicKey = async (key: string): Promise<boolean> => {
+        // Anthropic doesn't have a simple validation endpoint
+        // Just check format
+        return key.startsWith('sk-ant-');
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (!apiKey.trim()) {
+        if (!apiKeyInput.trim()) {
             setError('Please enter an API key');
             return;
         }
 
-        if (!apiKey.startsWith('sk-')) {
+        // Validate key format
+        if (selectedProvider === 'openai' && !apiKeyInput.startsWith('sk-')) {
             setError('OpenAI API keys start with "sk-"');
+            return;
+        }
+        if (selectedProvider === 'anthropic' && !apiKeyInput.startsWith('sk-ant-')) {
+            setError('Anthropic API keys start with "sk-ant-"');
             return;
         }
 
         setIsValidating(true);
 
         try {
-            const response = await fetch('https://api.openai.com/v1/models', {
-                headers: { Authorization: `Bearer ${apiKey}` },
-            });
+            const isValid = selectedProvider === 'openai'
+                ? await validateOpenAIKey(apiKeyInput)
+                : await validateAnthropicKey(apiKeyInput);
 
-            if (!response.ok && response.status === 401) {
+            if (!isValid) {
                 setError('Invalid API key. Please check and try again.');
                 setIsValidating(false);
                 return;
             }
 
-            localStorage.setItem('mini-artifact-api-key', apiKey);
+            // Save the key
+            setApiKey(selectedProvider, apiKeyInput);
+
+            // Set the provider and default model in store
+            setStoreProvider(selectedProvider);
+            setStoreModel(DEFAULT_MODELS[selectedProvider][0].id);
+
             onComplete();
         } catch {
-            // Network error - save anyway
-            localStorage.setItem('mini-artifact-api-key', apiKey);
+            // Save anyway on error
+            setApiKey(selectedProvider, apiKeyInput);
+            setStoreProvider(selectedProvider);
             onComplete();
         } finally {
             setIsValidating(false);
@@ -62,6 +98,12 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
     const handleSkip = () => {
         onComplete();
+    };
+
+    const handleProviderSelect = (provider: Provider) => {
+        setSelectedProvider(provider);
+        setApiKeyInput('');
+        setError('');
     };
 
     return (
@@ -115,20 +157,46 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                     </>
                 )}
 
-                {/* Step 2: API Key Setup */}
+                {/* Step 2: Provider Selection + API Key Setup */}
                 {step === 2 && (
                     <>
                         <div className="modal-header">
                             <span className="modal-icon">🔑</span>
-                            <h2>Configure OpenAI API</h2>
+                            <h2>Choose Your AI Provider</h2>
                         </div>
 
                         <div className="onboarding-section">
+                            {/* Provider Selection */}
+                            <div className="settings-group">
+                                <label className="settings-label">Provider</label>
+                                <div className="provider-toggle">
+                                    <button
+                                        type="button"
+                                        className={`provider-btn ${selectedProvider === 'openai' ? 'active' : ''}`}
+                                        onClick={() => handleProviderSelect('openai')}
+                                    >
+                                        OpenAI
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`provider-btn ${selectedProvider === 'anthropic' ? 'active' : ''}`}
+                                        onClick={() => handleProviderSelect('anthropic')}
+                                    >
+                                        Anthropic
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="info-box">
                                 <strong>Why do I need an API key?</strong>
                                 <p>
-                                    Mini Artifact uses <strong>GPT-4</strong> to understand your requirements
-                                    and build specifications. The API key authenticates your requests to OpenAI.
+                                    Mini Artifact uses{' '}
+                                    <strong>
+                                        {selectedProvider === 'openai' ? 'GPT-4' : 'Claude'}
+                                    </strong>{' '}
+                                    to understand your requirements and build specifications.
+                                    The API key authenticates your requests to{' '}
+                                    {selectedProvider === 'openai' ? 'OpenAI' : 'Anthropic'}.
                                 </p>
                             </div>
 
@@ -137,22 +205,22 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                                 <ul className="info-list">
                                     <li>Stored only in your browser's local storage</li>
                                     <li>Never sent to our servers</li>
-                                    <li>Only used for OpenAI API calls</li>
+                                    <li>Only used for {selectedProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API calls</li>
                                 </ul>
                             </div>
 
                             <form onSubmit={handleSubmit} className="api-key-form">
                                 <div className="form-group">
                                     <label className="form-label" htmlFor="api-key">
-                                        OpenAI API Key
+                                        {selectedProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API Key
                                     </label>
                                     <input
                                         type="password"
                                         id="api-key"
                                         className="form-input"
-                                        placeholder="sk-..."
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
+                                        placeholder={selectedProvider === 'openai' ? 'sk-...' : 'sk-ant-...'}
+                                        value={apiKeyInput}
+                                        onChange={(e) => setApiKeyInput(e.target.value)}
                                         autoFocus
                                     />
                                     {error && <p className="form-error">{error}</p>}
@@ -160,20 +228,51 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
                                 <div className="help-section">
                                     <strong>How to get an API key:</strong>
-                                    <ol className="help-steps">
-                                        <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a></li>
-                                        <li>Sign in or create an account</li>
-                                        <li>Click "Create new secret key"</li>
-                                        <li>Copy the key and paste it above</li>
-                                    </ol>
+                                    {selectedProvider === 'openai' ? (
+                                        <ol className="help-steps">
+                                            <li>
+                                                Go to{' '}
+                                                <a
+                                                    href="https://platform.openai.com/api-keys"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    platform.openai.com/api-keys
+                                                </a>
+                                            </li>
+                                            <li>Sign in or create an account</li>
+                                            <li>Click "Create new secret key"</li>
+                                            <li>Copy the key and paste it above</li>
+                                        </ol>
+                                    ) : (
+                                        <ol className="help-steps">
+                                            <li>
+                                                Go to{' '}
+                                                <a
+                                                    href="https://console.anthropic.com/settings/keys"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    console.anthropic.com/settings/keys
+                                                </a>
+                                            </li>
+                                            <li>Sign in or create an account</li>
+                                            <li>Click "Create Key"</li>
+                                            <li>Copy the key and paste it above</li>
+                                        </ol>
+                                    )}
                                     <p className="help-note">
-                                        💡 You'll need a paid OpenAI account with API credits.
-                                        New accounts get $5 free credits.
+                                        💡 You'll need a paid {selectedProvider === 'openai' ? 'OpenAI' : 'Anthropic'} account with API credits.
+                                        {selectedProvider === 'openai' && ' New accounts get $5 free credits.'}
                                     </p>
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={() => setStep(1)}
+                                    >
                                         ← Back
                                     </button>
                                     <button type="button" className="btn btn-secondary" onClick={handleSkip}>

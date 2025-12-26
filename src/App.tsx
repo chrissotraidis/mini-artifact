@@ -6,15 +6,16 @@ import { Controls } from './components/Controls';
 import { OnboardingModal } from './components/OnboardingModal';
 import { Sidebar } from './components/Sidebar';
 import { WorkflowIndicator } from './components/WorkflowIndicator';
-import { useStore } from './store';
-import { hasApiKey } from './api/openai';
+import { useStore, selectProvider } from './store';
+import { hasApiKey } from './api/providers';
 
 // ============================================================
 // App - Main Application Layout
 // ============================================================
 
 function App() {
-    const [showOnboarding, setShowOnboarding] = useState(() => !hasApiKey());
+    const provider = useStore(selectProvider);
+    const [showOnboarding, setShowOnboarding] = useState(() => !hasApiKey(provider));
     const errors = useStore((s) => s.errors);
     const removeError = useStore((s) => s.removeError);
     const conversationPhase = useStore((s) => s.conversationPhase);

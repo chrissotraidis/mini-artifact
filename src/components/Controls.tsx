@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useStore, selectCanGenerate, selectIsLoading, selectBuildResult } from '../store';
+import { useStore, selectCanGenerate, selectIsLoading, selectBuildResult, selectProvider, selectModel } from '../store';
 import { handleInput } from '../engine/nedry';
-import { hasApiKey, getErrorMessage } from '../api/openai';
+import { hasApiKey, getProviderErrorMessage } from '../api/providers';
 
 // ============================================================
 // Controls - Input Field and Action Buttons
@@ -29,6 +29,8 @@ export function Controls({ onSendMessage }: ControlsProps) {
     const setBuildResult = useStore((s) => s.setBuildResult);
     const setConversationPhase = useStore((s) => s.setConversationPhase);
     const reset = useStore((s) => s.reset);
+    const provider = useStore(selectProvider);
+    const model = useStore(selectModel);
 
     // Allow external message sending (from example prompts)
     useEffect(() => {
@@ -61,6 +63,8 @@ export function Controls({ onSendMessage }: ControlsProps) {
                     conversationPhase: 'gathering',
                     activePanel: 'chat',
                     errors: [],
+                    provider,
+                    model,
                 },
             });
 
@@ -74,7 +78,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
                     "I've updated the specification. You can continue refining or click Generate when ready."
                 );
             } else if (result.action.type === 'display_error') {
-                const errorMsg = getErrorMessage(new Error(result.action.error.message));
+                const errorMsg = getProviderErrorMessage(new Error(result.action.error.message));
                 addMessage('assistant', `⚠️ ${errorMsg}`);
             }
 
@@ -83,7 +87,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
             }
         } catch (error) {
             console.error('Error processing message:', error);
-            const errorMsg = getErrorMessage(error);
+            const errorMsg = getProviderErrorMessage(error);
             addMessage('assistant', `⚠️ ${errorMsg}`);
         } finally {
             setLoading(false);
@@ -119,6 +123,8 @@ export function Controls({ onSendMessage }: ControlsProps) {
                     conversationPhase: 'complete',
                     activePanel: 'preview',
                     errors: [],
+                    provider,
+                    model,
                 },
             });
 
@@ -133,7 +139,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
         } catch (error) {
             console.error('Build error:', error);
             setBuildStatus('error');
-            addMessage('assistant', `⚠️ Build failed: ${getErrorMessage(error)}`);
+            addMessage('assistant', `⚠️ Build failed: ${getProviderErrorMessage(error)}`);
         } finally {
             setLoading(false);
         }
@@ -189,7 +195,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
     // Get generate button state
     const getGenerateState = () => {
         if (isLoading) return { text: '⏳ Working...', disabled: true };
-        if (!hasApiKey()) return { text: '🔑 Add API Key', disabled: true };
+        if (!hasApiKey(provider)) return { text: '🔑 Add API Key', disabled: true };
         if (!currentSpec) return { text: '📝 Describe app first', disabled: true };
         if (conversationPhase === 'gathering')
             return { text: '💬 Answer questions', disabled: true };
@@ -216,7 +222,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
                     type="text"
                     className="controls-input"
                     placeholder={
-                        hasApiKey()
+                        hasApiKey(provider)
                             ? 'Describe your app or answer questions...'
                             : '🔑 Configure API key in Settings (⚙️) to start'
                     }
