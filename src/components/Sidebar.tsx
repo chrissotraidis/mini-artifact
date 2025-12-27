@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SettingsButton } from './SettingsButton';
 import { NewProjectModal } from './NewProjectModal';
+import { ThemeToggle } from './ThemeToggle';
 import { logger, Components } from '../utils/logger';
 import { useStore, selectActivePanel, selectExpandedPanel, selectProjects, selectCurrentProjectId } from '../store';
 import { Settings, FileCode, MessageSquare, Eye, Hammer, Plus, FolderOpen, Trash2 } from 'lucide-react';
@@ -58,6 +59,7 @@ export function Sidebar() {
                     style={{ width: '24px', height: '24px', borderRadius: '4px' }}
                 />
                 <span className="sidebar-title">Mini Artifact</span>
+                <ThemeToggle />
             </div>
 
             {/* Projects Section */}

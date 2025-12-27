@@ -21,6 +21,26 @@ import {
 export type ActiveAgent = 'idle' | 'arnold' | 'nedry' | 'raptor';
 
 // ------------------------------------------------------------
+// Theme Type
+// ------------------------------------------------------------
+
+export type Theme = 'dark' | 'light';
+
+// Helper to get initial theme from localStorage or default to dark
+function getInitialTheme(): Theme {
+    try {
+        const stored = localStorage.getItem('mini-artifact-theme');
+        if (stored === 'light' || stored === 'dark') return stored;
+    } catch { }
+    return 'dark'; // Dark by default
+}
+
+// Apply theme to document
+function applyThemeToDocument(theme: Theme): void {
+    document.documentElement.setAttribute('data-theme', theme);
+}
+
+// ------------------------------------------------------------
 // Project Persistence Helpers
 // ------------------------------------------------------------
 
@@ -80,6 +100,9 @@ interface StoreState {
     // Agent activity tracking
     activeAgent: ActiveAgent;
 
+    // Theme
+    theme: Theme;
+
     // Configuration
     provider: Provider;
     model: string;
@@ -132,6 +155,10 @@ interface StoreActions {
     // Agent activity actions
     setActiveAgent: (agent: ActiveAgent) => void;
 
+    // Theme actions
+    toggleTheme: () => void;
+    setTheme: (theme: Theme) => void;
+
     // Config actions
     setProvider: (provider: Provider) => void;
     setModel: (model: string) => void;
@@ -161,6 +188,7 @@ const initialState: StoreState = {
     errors: [],
     isLoading: false,
     activeAgent: 'idle',
+    theme: getInitialTheme(),
     provider: getInitialProvider(),
     model: DEFAULT_MODEL[getInitialProvider()],
 };
@@ -428,6 +456,19 @@ export const useStore = create<StoreState & StoreActions>()(
             // Agent activity actions
             setActiveAgent: (agent) => set({ activeAgent: agent }),
 
+            // Theme actions
+            toggleTheme: () => {
+                const newTheme = get().theme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('mini-artifact-theme', newTheme);
+                applyThemeToDocument(newTheme);
+                set({ theme: newTheme });
+            },
+            setTheme: (theme) => {
+                localStorage.setItem('mini-artifact-theme', theme);
+                applyThemeToDocument(theme);
+                set({ theme });
+            },
+
             // Config actions
             setProvider: (provider) => set((state) => ({
                 provider,
@@ -482,6 +523,7 @@ export const selectVisiblePanels = (state: StoreState) => state.visiblePanels;
 export const selectProvider = (state: StoreState) => state.provider;
 export const selectModel = (state: StoreState) => state.model;
 export const selectActiveAgent = (state: StoreState) => state.activeAgent;
+export const selectTheme = (state: StoreState) => state.theme;
 export const selectProjects = (state: StoreState) => state.projects;
 export const selectCurrentProjectId = (state: StoreState) => state.currentProjectId;
 export const selectSetProvider = (state: StoreActions) => state.setProvider;
