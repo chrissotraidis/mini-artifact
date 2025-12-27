@@ -279,54 +279,109 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
                         {activeTab === 'help' && (
                             <div className="settings-content">
                                 <div className="settings-section">
-                                    <h3>How to Use Mini Artifact</h3>
+                                    <h3>📖 The Core Workflow</h3>
+                                    <p className="about-text">
+                                        Mini Artifact follows a <strong>Write → Plan → Build → Review</strong> loop:
+                                    </p>
 
-                                    <div className="help-guide">
-                                        <div className="help-step">
-                                            <span className="step-number">1</span>
+                                    <div className="workflow-diagram">
+                                        <div className="workflow-step">
+                                            <span className="workflow-icon">✏️</span>
                                             <div>
-                                                <strong>Describe Your App</strong>
-                                                <p>Type what you want to build in the chat. Be specific about features and data.</p>
-                                                <p className="example">"Build a todo app with tasks that have titles, due dates, and priority levels"</p>
+                                                <strong>Write</strong>
+                                                <p>Describe your app in natural language</p>
                                             </div>
                                         </div>
-
-                                        <div className="help-step">
-                                            <span className="step-number">2</span>
+                                        <div className="workflow-arrow">→</div>
+                                        <div className="workflow-step">
+                                            <span className="workflow-icon">📋</span>
                                             <div>
-                                                <strong>Answer Questions</strong>
-                                                <p>Mini-Arnold will ask clarifying questions to understand your requirements.</p>
+                                                <strong>Plan</strong>
+                                                <p>Artifact builds a structured specification</p>
                                             </div>
                                         </div>
-
-                                        <div className="help-step">
-                                            <span className="step-number">3</span>
+                                        <div className="workflow-arrow">→</div>
+                                        <div className="workflow-step">
+                                            <span className="workflow-icon">🔧</span>
                                             <div>
-                                                <strong>Review the Spec</strong>
-                                                <p>Watch the JSON specification build in the middle panel. The completeness bar shows progress.</p>
+                                                <strong>Build</strong>
+                                                <p>Click Generate to assemble code</p>
                                             </div>
                                         </div>
-
-                                        <div className="help-step">
-                                            <span className="step-number">4</span>
+                                        <div className="workflow-arrow">→</div>
+                                        <div className="workflow-step">
+                                            <span className="workflow-icon">👁️</span>
                                             <div>
-                                                <strong>Generate</strong>
-                                                <p>When the spec is complete, click Generate to build your app. Preview it in the right panel.</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="help-step">
-                                            <span className="step-number">5</span>
-                                            <div>
-                                                <strong>Export</strong>
-                                                <p>Download the generated HTML file to use anywhere.</p>
+                                                <strong>Review</strong>
+                                                <p>Preview, iterate, and export</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="settings-section">
-                                    <h3>Keyboard Shortcuts</h3>
+                                    <h3>🚀 Getting Started</h3>
+
+                                    <div className="help-guide">
+                                        <div className="help-step">
+                                            <span className="step-number">1</span>
+                                            <div>
+                                                <strong>Describe What You Want</strong>
+                                                <p>Be specific about your app's purpose and the data it manages. Include details about properties, relationships, and features.</p>
+                                                <div className="example-box">
+                                                    <span className="example-label">Good example:</span>
+                                                    <p>"Build a task manager with tasks that have titles, due dates, priority (high/medium/low), and a completed status. I want to see all tasks in a list and be able to add, edit, and delete them."</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="help-step">
+                                            <span className="step-number">2</span>
+                                            <div>
+                                                <strong>Answer Clarifying Questions</strong>
+                                                <p>Artifact will ask targeted questions to fill in gaps in your description. The more specific your answers, the better the result.</p>
+                                                <div className="tip-box">
+                                                    <strong>💡 Tip:</strong> If Artifact asks about properties, list the specific data types you need (text, number, date, yes/no, or a list of options).
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="help-step">
+                                            <span className="step-number">3</span>
+                                            <div>
+                                                <strong>Watch the Spec Build</strong>
+                                                <p>The Specification panel shows your app's structure in real-time. The completeness bar tells you when the spec is ready:</p>
+                                                <ul className="spec-guide">
+                                                    <li><strong>0-50%</strong> — Gathering basic requirements</li>
+                                                    <li><strong>50-80%</strong> — Refining entities and views</li>
+                                                    <li><strong>80-100%</strong> — Ready to generate!</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div className="help-step">
+                                            <span className="step-number">4</span>
+                                            <div>
+                                                <strong>Generate Your App</strong>
+                                                <p>When the spec is complete, click <strong>Generate</strong>. Mini-Raptor assembles tested patterns into working HTML/CSS/JS code.</p>
+                                                <div className="tip-box">
+                                                    <strong>💡 Tip:</strong> Generation uses deterministic pattern assembly—same spec always produces the same output.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="help-step">
+                                            <span className="step-number">5</span>
+                                            <div>
+                                                <strong>Iterate and Export</strong>
+                                                <p>Preview your app in the right panel. Want changes? Describe them in chat and regenerate. When satisfied, click <strong>Export</strong> to download your HTML file.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>⌨️ Keyboard Shortcuts</h3>
                                     <div className="shortcuts-list">
                                         <div className="shortcut-item">
                                             <kbd>Enter</kbd>
@@ -334,13 +389,51 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
                                         </div>
                                         <div className="shortcut-item">
                                             <kbd>⌘/Ctrl + Enter</kbd>
-                                            <span>Generate app</span>
+                                            <span>Generate app (when spec is ready)</span>
                                         </div>
                                         <div className="shortcut-item">
                                             <kbd>⌘/Ctrl + E</kbd>
-                                            <span>Export HTML</span>
+                                            <span>Export HTML file</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>💡 Pro Tips</h3>
+                                    <div className="tips-list">
+                                        <div className="tip-item">
+                                            <span className="tip-icon">📝</span>
+                                            <p><strong>Edit the spec directly</strong> — You can modify the Name and Description in the Spec panel. For other changes, describe them in chat.</p>
+                                        </div>
+                                        <div className="tip-item">
+                                            <span className="tip-icon">🔄</span>
+                                            <p><strong>Iterate quickly</strong> — Don't aim for perfection on the first try. Generate, preview, describe changes, regenerate.</p>
+                                        </div>
+                                        <div className="tip-item">
+                                            <span className="tip-icon">📦</span>
+                                            <p><strong>Think in entities</strong> — Every app has data. "Tasks" in a todo app, "Expenses" in a budget tracker. Start by naming your data.</p>
+                                        </div>
+                                        <div className="tip-item">
+                                            <span className="tip-icon">🎯</span>
+                                            <p><strong>Keep it simple</strong> — Mini Artifact is designed for simple CRUD apps: lists, forms, dashboards. Complex logic may require manual coding.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>❓ What Can I Build?</h3>
+                                    <p className="about-text">Mini Artifact excels at simple, data-driven applications:</p>
+                                    <div className="app-examples">
+                                        <div className="app-example">✅ Todo lists & task managers</div>
+                                        <div className="app-example">✅ Expense trackers & budget tools</div>
+                                        <div className="app-example">✅ Note-taking apps</div>
+                                        <div className="app-example">✅ Simple dashboards</div>
+                                        <div className="app-example">✅ Contact lists & directories</div>
+                                        <div className="app-example">✅ Habit trackers</div>
+                                    </div>
+                                    <p className="about-text" style={{ marginTop: '12px', color: 'var(--color-text-tertiary)' }}>
+                                        <strong>Not ideal for:</strong> Complex business logic, authentication systems, real-time collaboration, or multi-page applications.
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -349,40 +442,138 @@ export function SettingsButton({ children, className }: SettingsButtonProps) {
                         {activeTab === 'about' && (
                             <div className="settings-content">
                                 <div className="settings-section">
-                                    <h3>About Mini Artifact</h3>
+                                    <h3>What is Mini Artifact?</h3>
                                     <p className="about-text">
                                         Mini Artifact is a <strong>proof of concept</strong> demonstrating
-                                        spec-driven development with AI.
+                                        spec-driven development with AI. It transforms natural language
+                                        descriptions into working web applications.
+                                    </p>
+                                    <div className="info-box">
+                                        <p style={{ margin: 0 }}>
+                                            <strong>Core Idea:</strong> Instead of generating code directly from prompts,
+                                            we first build a <em>specification</em>—a structured document that becomes
+                                            the source of truth. This makes output predictable, traceable, and evolvable.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>🏗️ Three-Layer Architecture</h3>
+                                    <p className="about-text">
+                                        Mini Artifact separates concerns into three distinct layers, each with a specific job:
                                     </p>
 
-                                    <div className="about-architecture">
-                                        <h4>Three-Layer Architecture</h4>
-                                        <div className="architecture-layer">
-                                            <span className="layer-icon">📝</span>
-                                            <div>
-                                                <strong>Mini-Arnold</strong>
-                                                <p>Documentation engine — converts your descriptions into specifications</p>
-                                            </div>
-                                        </div>
-                                        <div className="architecture-layer">
-                                            <span className="layer-icon">🔀</span>
-                                            <div>
-                                                <strong>Mini-Nedry</strong>
-                                                <p>Orchestrator — validates specs and routes to code generation</p>
-                                            </div>
-                                        </div>
-                                        <div className="architecture-layer">
-                                            <span className="layer-icon">🔧</span>
-                                            <div>
-                                                <strong>Mini-Raptor</strong>
-                                                <p>Composer — assembles patterns into working HTML/CSS/JS</p>
-                                            </div>
+                                    <div className="architecture-layer">
+                                        <span className="layer-icon">📝</span>
+                                        <div>
+                                            <strong>Mini-Arnold</strong>
+                                            <span className="layer-subtitle">Documentation Layer</span>
+                                            <p>Converts your natural language descriptions into structured JSON specifications. Asks clarifying questions to ensure nothing is ambiguous. Uses AI to understand intent and extract entities, properties, views, and actions.</p>
                                         </div>
                                     </div>
 
-                                    <div className="about-links">
-                                        <p>Version 0.1.0 • Built with React + TypeScript</p>
+                                    <div className="architecture-layer">
+                                        <span className="layer-icon">🔀</span>
+                                        <div>
+                                            <strong>Mini-Nedry</strong>
+                                            <span className="layer-subtitle">Orchestration Layer</span>
+                                            <p>The traffic controller. Routes your input to Arnold for spec building, validates specs before building, matches requirements to patterns, and coordinates the entire workflow. Manages state so the system remembers context.</p>
+                                        </div>
                                     </div>
+
+                                    <div className="architecture-layer">
+                                        <span className="layer-icon">🔧</span>
+                                        <div>
+                                            <strong>Mini-Raptor</strong>
+                                            <span className="layer-subtitle">Composition Layer</span>
+                                            <p>The builder. Assembles tested, reusable patterns into working HTML/CSS/JS. Deterministic: same spec always produces identical output. Uses a library of 14+ patterns covering layouts, views, forms, and actions.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>🎯 Design Principles</h3>
+                                    <div className="principles-list">
+                                        <div className="principle-item">
+                                            <strong>📄 Docs are the source of truth</strong>
+                                            <p>The specification is canonical. If code doesn't match the spec, the code is wrong.</p>
+                                        </div>
+                                        <div className="principle-item">
+                                            <strong>🔒 Separation of concerns</strong>
+                                            <p>Arnold, Nedry, and Raptor fail independently. An error in one layer doesn't corrupt others.</p>
+                                        </div>
+                                        <div className="principle-item">
+                                            <strong>🎲 Pattern-first, AI-second</strong>
+                                            <p>80% deterministic pattern assembly, 20% generative. Tested patterns reduce bugs.</p>
+                                        </div>
+                                        <div className="principle-item">
+                                            <strong>👤 Human in the loop</strong>
+                                            <p>No code is generated without your explicit approval. You control when to build.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>🔬 Why Build This Way?</h3>
+                                    <p className="about-text">
+                                        Most AI coding tools collapse planning and execution into a single prompt-response loop. This feels fast but creates problems:
+                                    </p>
+                                    <ul className="problem-list">
+                                        <li><strong>Intent is disposable</strong> — Prompts disappear, leaving no record of decisions</li>
+                                        <li><strong>Output is inconsistent</strong> — Same input can produce different results</li>
+                                        <li><strong>Errors propagate silently</strong> — No validation layers to catch mistakes</li>
+                                    </ul>
+                                    <p className="about-text">
+                                        Mini Artifact proves that by separating documentation, orchestration, and composition,
+                                        AI-assisted software can be <strong>traceable</strong>, <strong>predictable</strong>, and <strong>evolvable</strong>.
+                                    </p>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>🛠️ Technical Details</h3>
+                                    <div className="tech-details">
+                                        <div className="tech-item">
+                                            <strong>Frontend</strong>
+                                            <span>React 18 + TypeScript + Vite</span>
+                                        </div>
+                                        <div className="tech-item">
+                                            <strong>State</strong>
+                                            <span>Zustand with localStorage persistence</span>
+                                        </div>
+                                        <div className="tech-item">
+                                            <strong>AI Providers</strong>
+                                            <span>OpenAI (GPT-4o) or Anthropic (Claude)</span>
+                                        </div>
+                                        <div className="tech-item">
+                                            <strong>Templates</strong>
+                                            <span>Handlebars for pattern assembly</span>
+                                        </div>
+                                        <div className="tech-item">
+                                            <strong>Output</strong>
+                                            <span>Pure HTML/CSS/JS (no framework)</span>
+                                        </div>
+                                        <div className="tech-item">
+                                            <strong>Pattern Library</strong>
+                                            <span>14 patterns (layouts, views, actions, utilities)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="settings-section">
+                                    <h3>🔒 Privacy & Security</h3>
+                                    <ul className="security-list">
+                                        <li>Your API keys are stored <strong>only in your browser</strong> (localStorage)</li>
+                                        <li>No user data is sent to any server except OpenAI/Anthropic for AI requests</li>
+                                        <li>Generated code is sandboxed in an iframe</li>
+                                        <li>Session data is cleared when you close the browser</li>
+                                    </ul>
+                                </div>
+
+                                <div className="about-links">
+                                    <p><strong>Version 0.1.0</strong> • Created by Chris Sotraidis</p>
+                                    <p style={{ color: 'var(--color-text-tertiary)', fontSize: '12px' }}>
+                                        A proof of concept for the Artifact Interaction Engine
+                                    </p>
                                 </div>
                             </div>
                         )}

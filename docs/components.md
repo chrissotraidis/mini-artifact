@@ -357,21 +357,47 @@ function assemblePatterns(patterns: PatternReference[], spec: Specification): Co
 
 ---
 
-## Component Interaction Flow
+## 4. Agent Activity Indicator (UI Component)
 
+### Purpose
+
+Provides **live visibility** into which agent is performing work, making handoffs clear and traceable.
+
+### Interface
+
+```tsx
+type ActiveAgent = 'idle' | 'arnold' | 'nedry' | 'raptor';
+
+// Store state
+interface StoreState {
+  activeAgent: ActiveAgent;
+}
+
+// Store actions  
+interface StoreActions {
+  setActiveAgent: (agent: ActiveAgent) => void;
+}
 ```
-USER ───▶ MINI-NEDRY ───▶ MINI-ARNOLD ───▶ Spec
-                │                              │
-                ◀──────── Question ◀────────┘
-                │
-                ▼ (when spec complete)
-          MINI-RAPTOR ───▶ Pattern Library
-                │                    │
-                ◀──── Templates ────┘
-                │
-                ▼
-          BUILD OUTPUT ───▶ PREVIEW
-```
+
+### Agent Display
+
+| Agent | Icon | Description |
+|-------|------|-------------|
+| Arnold | 📋 | Documentation - Building specification |
+| Nedry | 🔀 | Orchestration - Routing and coordinating |
+| Raptor | 🔧 | Composition - Assembling your app |
+
+### Visual States
+
+- **Idle**: All icons dimmed, "Agents Ready" label
+- **Active**: One icon pulsing with blue glow, agent name displayed
+
+### State Transitions
+
+| User Action | Agent Flow |
+|-------------|-----------|
+| Send message | `nedry` → `arnold` → `idle` |
+| Click Generate | `nedry` → `raptor` → `idle` |
 
 ---
 
@@ -380,3 +406,4 @@ USER ───▶ MINI-NEDRY ───▶ MINI-ARNOLD ───▶ Spec
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
 | 0.1.0 | 2025-12-22 | Chris Sotraidis | Initial component specifications |
+| 0.1.1 | 2025-12-26 | System | Added Agent Activity Indicator |

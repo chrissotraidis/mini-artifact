@@ -6,6 +6,7 @@ import { ResizablePanels } from './components/ResizablePanels';
 import { Controls } from './components/Controls';
 import { OnboardingModal } from './components/OnboardingModal';
 import { Sidebar } from './components/Sidebar';
+import { AgentActivityIndicator } from './components/AgentActivityIndicator';
 import { useStore, selectProvider, selectExpandedPanel, selectCanGenerate, selectIsLoading, selectBuildResult, selectVisiblePanels } from './store';
 import { hasApiKey } from './api/providers';
 import { handleInput } from './engine/nedry';
@@ -37,6 +38,7 @@ function App() {
     const setLoading = useStore((s) => s.setLoading);
     const setBuildStatus = useStore((s) => s.setBuildStatus);
     const setBuildResult = useStore((s) => s.setBuildResult);
+    const setActiveAgent = useStore((s) => s.setActiveAgent);
 
     // Handle message send from ChatPanel examples
     const handleSendMessage = useCallback((message: string) => {
@@ -57,8 +59,10 @@ function App() {
 
         setBuildStatus('building');
         setLoading(true);
+        setActiveAgent('nedry'); // Nedry starts orchestrating
 
         try {
+            setActiveAgent('raptor'); // Raptor builds the app
             const result = await handleInput({
                 type: 'build_request',
                 payload: null,
@@ -93,6 +97,7 @@ function App() {
             addMessage('assistant', `⚠️ Build failed: ${getProviderErrorMessage(error)}`);
         } finally {
             setLoading(false);
+            setActiveAgent('idle');
         }
     };
 
@@ -179,6 +184,9 @@ function App() {
                 {/* Normal Multi-Panel Layout */}
                 {!expandedPanel && (
                     <>
+                        {/* Agent Activity Indicator */}
+                        <AgentActivityIndicator />
+
                         {/* Panel Toggle Bar */}
                         <div className="panel-toggle-bar">
                             <span className="panel-toggle-label">Show Panels:</span>

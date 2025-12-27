@@ -15,6 +15,12 @@ import {
 } from '../types';
 
 // ------------------------------------------------------------
+// Agent Activity Type
+// ------------------------------------------------------------
+
+export type ActiveAgent = 'idle' | 'arnold' | 'nedry' | 'raptor';
+
+// ------------------------------------------------------------
 // Project Persistence Helpers
 // ------------------------------------------------------------
 
@@ -71,6 +77,9 @@ interface StoreState {
     // Loading states
     isLoading: boolean;
 
+    // Agent activity tracking
+    activeAgent: ActiveAgent;
+
     // Configuration
     provider: Provider;
     model: string;
@@ -120,6 +129,9 @@ interface StoreActions {
     // Loading actions
     setLoading: (loading: boolean) => void;
 
+    // Agent activity actions
+    setActiveAgent: (agent: ActiveAgent) => void;
+
     // Config actions
     setProvider: (provider: Provider) => void;
     setModel: (model: string) => void;
@@ -148,6 +160,7 @@ const initialState: StoreState = {
     visiblePanels: { chat: true, spec: true, preview: true },
     errors: [],
     isLoading: false,
+    activeAgent: 'idle',
     provider: getInitialProvider(),
     model: DEFAULT_MODEL[getInitialProvider()],
 };
@@ -412,6 +425,9 @@ export const useStore = create<StoreState & StoreActions>()(
             // Loading actions
             setLoading: (loading) => set({ isLoading: loading }),
 
+            // Agent activity actions
+            setActiveAgent: (agent) => set({ activeAgent: agent }),
+
             // Config actions
             setProvider: (provider) => set((state) => ({
                 provider,
@@ -465,6 +481,7 @@ export const selectExpandedPanel = (state: StoreState) => state.expandedPanel;
 export const selectVisiblePanels = (state: StoreState) => state.visiblePanels;
 export const selectProvider = (state: StoreState) => state.provider;
 export const selectModel = (state: StoreState) => state.model;
+export const selectActiveAgent = (state: StoreState) => state.activeAgent;
 export const selectProjects = (state: StoreState) => state.projects;
 export const selectCurrentProjectId = (state: StoreState) => state.currentProjectId;
 export const selectSetProvider = (state: StoreActions) => state.setProvider;

@@ -55,7 +55,7 @@ export function ChatPanel({ onSendMessage }: ChatPanelProps) {
                                 What do you want to build?
                             </h1>
                             <p className="welcome-subtitle">
-                                Describe your app in natural language. Mini-Arnold will ask clarifying questions
+                                Describe your app in natural language. Artifact will ask clarifying questions
                                 and build a specification. Then click Generate to create your app.
                             </p>
                         </div>
@@ -87,7 +87,7 @@ export function ChatPanel({ onSendMessage }: ChatPanelProps) {
                             <div className="message-content">
                                 <div className="message-header">
                                     <span className="message-role">
-                                        {message.role === 'user' ? 'You' : 'Mini-Arnold'}
+                                        {message.role === 'user' ? 'You' : 'Artifact'}
                                     </span>
                                     <span className="message-time">
                                         {formatTime(message.timestamp)}
