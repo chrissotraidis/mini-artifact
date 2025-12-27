@@ -235,7 +235,7 @@ export function SpecPanel({ hideHeader = false }: SpecPanelProps) {
                                     <p>
                                         <strong>💡 Tip:</strong> You can edit the App Info above directly.
                                         To modify Entities, Views, or Actions, describe the changes you want in the Chat
-                                        and Mini-Arnold will update the specification.
+                                        and Artifact will update the specification.
                                     </p>
                                 </div>
                             </div>
@@ -248,7 +248,7 @@ export function SpecPanel({ hideHeader = false }: SpecPanelProps) {
                             Specification will appear here as you describe your app
                         </p>
                         <p className="spec-empty-hint">
-                            Mini-Arnold will ask clarifying questions
+                            Artifact will ask clarifying questions
                             and build a structured spec from your answers
                         </p>
                     </div>

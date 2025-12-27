@@ -31,6 +31,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
     const reset = useStore((s) => s.reset);
     const provider = useStore(selectProvider);
     const model = useStore(selectModel);
+    const setActiveAgent = useStore((s) => s.setActiveAgent);
 
     // Auto-resize textarea
     const adjustTextareaHeight = () => {
@@ -53,8 +54,10 @@ export function Controls({ onSendMessage }: ControlsProps) {
         setInput('');
         addMessage('user', userMessage);
         setLoading(true);
+        setActiveAgent('nedry'); // Nedry routes the message
 
         try {
+            setActiveAgent('arnold'); // Arnold processes the message
             const result = await handleInput({
                 type: 'user_message',
                 payload: userMessage,
@@ -97,6 +100,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
             addMessage('assistant', `⚠️ ${errorMsg}`);
         } finally {
             setLoading(false);
+            setActiveAgent('idle');
         }
     };
 
@@ -106,8 +110,10 @@ export function Controls({ onSendMessage }: ControlsProps) {
 
         setBuildStatus('building');
         setLoading(true);
+        setActiveAgent('nedry'); // Nedry validates and routes
 
         try {
+            setActiveAgent('raptor'); // Raptor builds
             const result = await handleInput({
                 type: 'build_request',
                 payload: null,
@@ -141,6 +147,7 @@ export function Controls({ onSendMessage }: ControlsProps) {
             addMessage('assistant', `⚠️ Build failed: ${getProviderErrorMessage(error)}`);
         } finally {
             setLoading(false);
+            setActiveAgent('idle');
         }
     };
 
